@@ -49,7 +49,7 @@ int main(int argc,char *argv[]){ // argc é o numero de elementos e argv são os
 		strcpy(nomeArq,argv[1]);
 		leArq(nomeArq, ext);
 		carregaArgumentosDefault();
-		//criaCache();
+		criaCache();
 		//printf("\n################### Configuracao da Cache: Default ###################\n");
 	}
 	else if(argc==11){
@@ -62,7 +62,6 @@ int main(int argc,char *argv[]){ // argc é o numero de elementos e argv são os
 		printf ("ERRO: Número de argumentos inválido, tente novamente !");
 		exit(1);
 	}
-	criaCache();
 	/*	
 	int endereco,i;
 	for (i=0; i<8; i++){
