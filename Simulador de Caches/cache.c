@@ -92,6 +92,10 @@ int main(int argc,char *argv[]){ // argc é o numero de elementos e argv são os
 						totalAssoc(endereco, nsets_L1i, bsize_L1i);
 					} 
 				}
+				else if(endereco < XX && le==1){//dados para escrita metodo write-back
+				}
+				else if(endereco >= XX && le==1){//instruçoes para escrita metodo write-back
+				}
 				
 			}
 	}
