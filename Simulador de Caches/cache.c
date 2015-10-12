@@ -234,9 +234,9 @@ void criaCache(){
 	}
 	//Mesmo código para a L2
 	if((assoc_L2>1) && (nsets_L2>1)){                 
-		cacheL2M = malloc((sizeof(cache))*nsets_L1d);
+		cacheL2M = malloc((sizeof(cache))*nsets_L2);
 		for(j = 0; j< nsets_L1i; j++){
-			cacheL2M[j] = malloc((sizeof(cache))*assoc_L1d);
+			cacheL2M[j] = malloc((sizeof(cache))*assoc_L2);
 		}
 		for (i=0; i<nsets_L1d; i++){
 			for (j=0; j<assoc_L1d; j++){
@@ -246,7 +246,7 @@ void criaCache(){
 		}
 	}
 	else {
-		cacheL2 = malloc((sizeof(cache))*nsets_L1d);
+		cacheL2 = malloc((sizeof(cache))*nsets_L2);
 		for(i=0; i<nsets_L1d; i++){
 			cacheL2[i].tag = 0;
 			cacheL2[i].bitVal = 0;
