@@ -12,14 +12,14 @@
  *1<nsets_L1i> 2<bsize_L1i> 3<assoc_L1i> 4<nsets_L1d> 5<bsize_L1d> 6<assoc_L1d> 7<nsets_L2> 8<bsize_L2> 9<assoc_L2> 10arquivo_de_entrada*/
 //leitura = 0 , escrita = 1
 typedef struct{
-	bool bitVal;
+	int bitVal;
 	int tag;
 }cache;
 
 //Declarações de variáveis 
 cache *cacheL1_i,*cacheL1_d, *cacheL2, **cacheL1Mi, **cacheL1Md, **cacheL2M; 
 FILE *arq;
-int write, read; // Número de escritas e leituras
+int write=0, read=0; // Número de escritas e leituras
 int nsets_L1i, bsize_L1i, assoc_L1i, nsets_L1d, bsize_L1d, assoc_L1d, nsets_L2, bsize_L2, assoc_L2; //referente as caches
 int numAcess=0;
 int hitL1d=0, hitL1i=0, hitL2=0; //hit da L1 d e L1 i, hit da L2
@@ -43,7 +43,6 @@ float logBase2(int num);
 
 int main(int argc,char *argv[]){ // argc é o numero de elementos e argv são os elementos, começa no 1( pq o 0 é o ./cache )
 	char nomeArq[50], ext[4];
-	int i,j;
 	//configuração default
 	if (argc==2){
 		strcpy(nomeArq,argv[1]);
@@ -58,6 +57,7 @@ int main(int argc,char *argv[]){ // argc é o numero de elementos e argv são os
 		validaArgumentos(argv);
 		carregaArgumentos(argv);
 		criaCache();
+	}
 	else{
 		printf ("ERRO: Número de argumentos inválido, tente novamente !");
 		exit(1);
@@ -198,7 +198,7 @@ void criaCache(){
 		//"limpa" as posições
 		for (i=0; i<nsets_L1i; i++){
 			for (j=0; j<assoc_L1i; j++){
-				cacheL1Mi[i][j].val = false;               
+				cacheL1Mi[i][j].bitVal = 0;               
 				cacheL1Mi[i][j].tag = 0;
 			}
 		}
@@ -209,7 +209,7 @@ void criaCache(){
 		//"limpa" as posições   
 		for(i=0; i<nsets_L1i; i++){
 			cacheL1_i[i].tag = 0;
-			cacheL1_i[i].bitVal = false;
+			cacheL1_i[i].bitVal = 0;
 		}
 	} 
 	//Mesmo código acima para L1 de dados                                            
@@ -220,7 +220,7 @@ void criaCache(){
 		}
 		for (i=0; i<nsets_L1d; i++){
 			for (j=0; j<assoc_L1d; j++){
-				cacheL1Md[i][j].bitVal = false;
+				cacheL1Md[i][j].bitVal = 0;
 				cacheL1Md[i][j].tag = 0;
 			}
 		}
@@ -229,7 +229,7 @@ void criaCache(){
 		cacheL1_d = malloc((sizeof(cache))*nsets_L1d);
 		for(i=0; i<nsets_L1d; i++){
 			cacheL1_d[i].tag = 0;
-			cacheL1_d[i].bitVal = false;
+			cacheL1_d[i].bitVal = 0;
 		}
 	}
 	//Mesmo código para a L2
@@ -240,7 +240,7 @@ void criaCache(){
 		}
 		for (i=0; i<nsets_L1d; i++){
 			for (j=0; j<assoc_L1d; j++){
-				cacheL2M[i][j].bitVal = false;
+				cacheL2M[i][j].bitVal = 0;
 				cacheL2M[i][j].tag = 0;
 			}
 		}
@@ -249,7 +249,8 @@ void criaCache(){
 		cacheL2 = malloc((sizeof(cache))*nsets_L1d);
 		for(i=0; i<nsets_L1d; i++){
 			cacheL2[i].tag = 0;
-			cacheL2[i].bitVal = false;
+			cacheL2[i].bitVal = 0;
 		}
 	}
 }
+
