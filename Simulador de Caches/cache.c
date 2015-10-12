@@ -26,10 +26,9 @@ int hitL1d=0, hitL1i=0, hitL2=0; //hit da L1 d e L1 i, hit da L2
 int missL1i=0, missCompL1i=0, missCapL1i=0, missConfL1i=0; //miss da L1 instruções
 int missL1d=0, missCompL1d=0, missCapL1d=0, missConfL1d=0; //miss da L1 dados
 int missL2=0, missCompL2=0, missCapL2=0, missConfL2=0; // miss da L2
-float hitRatioL1i=0,hitRatioL1d=0, hitRatioL2;// hit Ratio
-float missRatioL1i=0,missRatioL1d=0, missRatioL2; // miss ratio
 void criaCache();
 void nomeCache(int ass, int nset);
+void dadosRelatorio (int mt, int mcom,int mcap,int mconf, int ht);
 int XX=3000; //Júlio não especificou, minha cache os endereços abaixo de 3000 são acessos a memória
 
 //Funções usadas
@@ -137,37 +136,38 @@ void leArq (char *nomeArq, char *ext){
 	}
 }
 void relatorioDeEstatica (){
-	printf ("\t\t###############################\n\t\t## Relatório de Estatísticas ##\n\t\t###############################\n\n");
+	printf ("\n\t\t###############################\n\t\t## Relatório de Estatísticas ##\n\t\t###############################\n\n");
 	printf ("*Número de acessos a memória: %d\n", numAcess);
 	printf ("*Número de escritas na memória: %d\n", write);
 	printf ("*Número de leitura na memória: %d\n\n", read);
 	printf("\n\n################### Cache L1 de dados ##################\n\n");
 	// Informa qual cache se refere
 	nomeCache(assoc_L1d, nsets_L1d);
-	printf ("\t*Total de Hit: %d\n", hitL1d);
-	printf ("\t*Total de Miss: %d\n", missL1d);
-	printf ("\t\t-Quantidade de Miss Compulsório: %d\n", missCompL1d);
-	printf ("\t\t-Quantidade de Miss de Capacidade: %d\n", missCapL1d);
-	printf ("\t\t-Quantidade de Miss de Conflito: %d\n", missConfL1d);
+	dadosRelatorio(missL1d, missCompL1d, missCapL1d, missConfL1d, hitL1d);
 	printf("\n\n################ Cache L1 de instruções ################\n\n");
 	// Informa qual cache se refere
 	nomeCache(assoc_L1i, nsets_L1i);
-	printf ("\t*Total de Hit: %d\n", hitL1i);
-	printf ("\t*Total de Miss: %d\n", missL1i);
-	printf ("\t\t-Quantidade de Miss Compulsório: %d\n", missCompL1i);
-	printf ("\t\t-Quantidade de Miss de Capacidade: %d\n", missCapL1i);
-	printf ("\t\t-Quantidade de Miss de Conflito: %d\n", missConfL1i);
+	dadosRelatorio(missL1i, missCompL1i, missCapL1i, missConfL1i, hitL1i);
 	printf("\n\n####################### Cache L2 #######################\n\n");
 	// Informa qual cache se refere
 	nomeCache(assoc_L2, nsets_L2);
-	printf ("\t*Total de Hit: %d\n", hitL2);
-	printf ("\t*Total de Miss: %d\n", missL2);
-	printf ("\t\t-Quantidade de Miss Compulsório: %d\n", missCompL2);
-	printf ("\t\t-Quantidade de Miss de Capacidade: %d\n", missCapL2);
-	printf ("\t\t-Quantidade de Miss de Conflito: %d\n", missConfL2);
+	dadosRelatorio(missL2, missCompL2, missCapL2, missConfL2, hitL2);
 	printf("\n\n########################################################\n\n");
 
 }
+void dadosRelatorio (int mt, int mcom,int mcap,int mconf, int ht){
+	float hr, mr; //hit ratio e miss ratio
+	hr= (float)(ht*100)/numAcess; // hit total * 100 / num acesso = hit ratio
+	mr= (float)(mt*100)/numAcess;
+	printf ("\t*Total de Hit: %d\n", ht);
+	printf ("\t*Total de Miss: %d\n", mt);
+	printf ("\t*Hit Ratio: %f\n", hr);
+	printf ("\t*MIss Ratio: %f\n", mr);
+	printf ("\t\t-Quantidade de Miss Compulsório: %d\n", mcom);
+	printf ("\t\t-Quantidade de Miss de Capacidade: %d\n", mcap);
+	printf ("\t\t-Quantidade de Miss de Conflito: %d\n", mconf);
+}
+	
 void nomeCache(int ass, int nset){
 	// Informa qual cache se refere
 	if((ass==1) && (nset>1)){                       
