@@ -26,13 +26,12 @@ int hitL1d=0, hitL1i=0, hitL2=0; //hit da L1 d e L1 i, hit da L2
 int missL1i=0, missCompL1i=0, missCapL1i=0, missConfL1i=0; //miss da L1 instruções
 int missL1d=0, missCompL1d=0, missCapL1d=0, missConfL1d=0; //miss da L1 dados
 int missL2=0, missCompL2=0, missCapL2=0, missConfL2=0; // miss da L2
-void criaCache();
-void nomeCache(int ass, int nset);
-void dadosRelatorio (int mt, int mcom,int mcap,int mconf, int ht);
 int XX=3000; //Júlio não especificou, minha cache os endereços abaixo de 3000 são acessos a memória
-
+int endereco, le; // le é leitura escrita
 //Funções usadas
-void mapeamentoDireto(int endereco);
+void mapeamentoDireto(int endereco, int nsets, int bsize);
+void conjAssoc(int endereco, int nsets, int bsize);
+void totalAssoc(int endereco, int nsets, int bsize);
 void leExtensao(char *nomeArq, char *ext);
 void leArq (char *nomeArq, char *ext);
 void carregaArgumentos(char *argv[]);
@@ -40,6 +39,9 @@ void carregaArgumentosDefault();
 void relatorioDeEstatica ();
 void validaArgumentos(char *argv[]);
 float logBase2(int num);
+void criaCache();
+void nomeCache(int ass, int nset);
+void dadosRelatorio (int mt, int mcom,int mcap,int mconf, int ht);
 
 int main(int argc,char *argv[]){ // argc é o numero de elementos e argv são os elementos, começa no 1( pq o 0 é o ./cache )
 	char nomeArq[50], ext[4];
@@ -63,7 +65,35 @@ int main(int argc,char *argv[]){ // argc é o numero de elementos e argv são os
 	criaCache();//Cria a L1 de instruções e dados, e cria a L2 também
 	
 	if (strcmp(ext, "txt")==0){//se o arquivo é texto
-		
+			while (fscanf(arq, "%d", &endereco) != EOF){//vai ler linha por linha
+				fscanf(arq, "%d", &le);// A segunda linha informa se é leitura=0 ou escrita=1
+				numAcess++;
+				//endereços  abaixo  de  XX serão considerados acessos a memória de dados(especificação do trabalho)
+				if(endereco < XX && le==0){
+					//Vai para sua devida configuração
+					if((assoc_L1d==1) && (nsets_L1d>1)){                        
+						mapeamentoDireto(endereco, nsets_L1d, bsize_L1d);
+					} 
+					else if((assoc_L1d>1) && (nsets_L1d>1)){ 
+						conjAssoc(endereco, nsets_L1d, bsize_L1d);
+					}
+					else if((assoc_L1d>1) && (nsets_L1d==1)){
+						totalAssoc(endereco, nsets_L1d, bsize_L1d);
+					} 
+				}
+				else if(endereco >= XX && le==0){ //Vai para cache de instruções se o endereço for igual a XX ou superior
+					if((assoc_L1i==1) && (nsets_L1i>1)){                        
+						mapeamentoDireto(endereco, nsets_L1i, bsize_L1i);
+					}
+					else if((assoc_L1i>1) && (nsets_L1i>1)){ 
+						conjAssoc(endereco, nsets_L1i, bsize_L1i);
+					}
+					else if((assoc_L1i>1) && (nsets_L1i==1)){
+						totalAssoc(endereco, nsets_L1i, bsize_L1i);
+					} 
+				}
+				
+			}
 	}
 	/*	
 	int endereco,i;
@@ -84,9 +114,14 @@ int main(int argc,char *argv[]){ // argc é o numero de elementos e argv são os
 	relatorioDeEstatica();
 	return 0;
 }
-/*
-void mapeamentoDireto(int endereco){
-	int indice, tag,sizeOffset=2, sizeIndice=3;
+
+void conjAssoc(int endereco, int nsets, int bsize){
+}
+void totalAssoc(int endereco, int nsets, int bsize){
+}
+
+void mapeamentoDireto(int endereco,int nsets, int bsize){
+/*	int indice, tag,sizeOffset=2, sizeIndice=3;
 	indice=endereco % 8; 
 	tag=endereco >>(sizeOffset+sizeIndice);
 	if (cacheL1[indice].bitVal == false){
@@ -102,8 +137,8 @@ void mapeamentoDireto(int endereco){
 			miss++;
 			cacheL1[indice].tag=tag;
 		}
-	}
-}*/
+	}*/
+}
 
 void validaArgumentos(char *argv[]){
 	int i;
