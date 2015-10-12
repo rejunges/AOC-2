@@ -23,12 +23,13 @@ int write=0, read=0; // Número de escritas e leituras
 int nsets_L1i, bsize_L1i, assoc_L1i, nsets_L1d, bsize_L1d, assoc_L1d, nsets_L2, bsize_L2, assoc_L2; //referente as caches
 int numAcess=0;
 int hitL1d=0, hitL1i=0, hitL2=0; //hit da L1 d e L1 i, hit da L2
-int missL1=0, missCompL1i=0, missCapL1i=0, missConfL1i=0; //miss da L1 instruções
+int missL1i=0, missCompL1i=0, missCapL1i=0, missConfL1i=0; //miss da L1 instruções
 int missL1d=0, missCompL1d=0, missCapL1d=0, missConfL1d=0; //miss da L1 dados
 int missL2=0, missCompL2=0, missCapL2=0, missConfL2=0; // miss da L2
 float hitRatioL1i=0,hitRatioL1d=0, hitRatioL2;// hit Ratio
 float missRatioL1i=0,missRatioL1d=0, missRatioL2; // miss ratio
 void criaCache();
+void nomeCache(int ass, int nset);
 int XX=3000; //Júlio não especificou, minha cache os endereços abaixo de 3000 são acessos a memória
 
 //Funções usadas
@@ -48,7 +49,6 @@ int main(int argc,char *argv[]){ // argc é o numero de elementos e argv são os
 		strcpy(nomeArq,argv[1]);
 		leArq(nomeArq, ext);
 		carregaArgumentosDefault();
-		criaCache();
 		//printf("\n################### Configuracao da Cache: Default ###################\n");
 	}
 	else if(argc==11){
@@ -56,11 +56,15 @@ int main(int argc,char *argv[]){ // argc é o numero de elementos e argv são os
 		leArq(nomeArq, ext);
 		validaArgumentos(argv);
 		carregaArgumentos(argv);
-		criaCache();
 	}
 	else{
 		printf ("ERRO: Número de argumentos inválido, tente novamente !");
 		exit(1);
+	}
+	criaCache();//Cria a L1 de instruções e dados, e cria a L2 também
+	
+	if (strcmp(ext, "txt")==0){//se o arquivo é texto
+		
 	}
 	/*	
 	int endereco,i;
@@ -78,6 +82,7 @@ int main(int argc,char *argv[]){ // argc é o numero de elementos e argv são os
 
 	printf("MISS:%d\nHIT:%d\n",miss, hit);*/
 	fclose(arq);
+	relatorioDeEstatica();
 	return 0;
 }
 /*
@@ -133,20 +138,49 @@ void leArq (char *nomeArq, char *ext){
 }
 void relatorioDeEstatica (){
 	printf ("\t\t###############################\n\t\t## Relatório de Estatísticas ##\n\t\t###############################\n\n");
-	printf ("Número de acessos a memória: %d\n\n", numAcess);
-	printf("\t##### Cache L1 de Instrucoes \n");
+	printf ("*Número de acessos a memória: %d\n", numAcess);
+	printf ("*Número de escritas na memória: %d\n", write);
+	printf ("*Número de leitura na memória: %d\n\n", read);
+	printf("\n\n################### Cache L1 de dados ##################\n\n");
 	// Informa qual cache se refere
-	if((assoc_L1i==1) && (nsets_L1i>1)){                       
-		printf("####### Cache Direta\n\n");
-	} else if((assoc_L1i>1) && (nsets_L1i>1)){ 
-		printf("####### Cache Conjunto Associativo\n\n");
-	} else if((assoc_L1i>1) && (nsets_L1i==1)){
-		printf("#######C ache Totalmente Associativa\n\n");
-	}
-	printf("\t##### Cache L1 de Dados \n");
-	printf("\t##### Cache L2 de Dados \n");
-	
+	nomeCache(assoc_L1d, nsets_L1d);
+	printf ("\t*Total de Hit: %d\n", hitL1d);
+	printf ("\t*Total de Miss: %d\n", missL1d);
+	printf ("\t\t-Quantidade de Miss Compulsório: %d\n", missCompL1d);
+	printf ("\t\t-Quantidade de Miss de Capacidade: %d\n", missCapL1d);
+	printf ("\t\t-Quantidade de Miss de Conflito: %d\n", missConfL1d);
+	printf("\n\n################ Cache L1 de instruções ################\n\n");
+	// Informa qual cache se refere
+	nomeCache(assoc_L1i, nsets_L1i);
+	printf ("\t*Total de Hit: %d\n", hitL1i);
+	printf ("\t*Total de Miss: %d\n", missL1i);
+	printf ("\t\t-Quantidade de Miss Compulsório: %d\n", missCompL1i);
+	printf ("\t\t-Quantidade de Miss de Capacidade: %d\n", missCapL1i);
+	printf ("\t\t-Quantidade de Miss de Conflito: %d\n", missConfL1i);
+	printf("\n\n####################### Cache L2 #######################\n\n");
+	// Informa qual cache se refere
+	nomeCache(assoc_L2, nsets_L2);
+	printf ("\t*Total de Hit: %d\n", hitL2);
+	printf ("\t*Total de Miss: %d\n", missL2);
+	printf ("\t\t-Quantidade de Miss Compulsório: %d\n", missCompL2);
+	printf ("\t\t-Quantidade de Miss de Capacidade: %d\n", missCapL2);
+	printf ("\t\t-Quantidade de Miss de Conflito: %d\n", missConfL2);
+	printf("\n\n########################################################\n\n");
+
 }
+void nomeCache(int ass, int nset){
+	// Informa qual cache se refere
+	if((ass==1) && (nset>1)){                       
+		printf("-----> Cache Direta\n\n");
+	}
+	else if((ass>1) && (nset>1)){ 
+		printf("-----> Cache Conjunto Associativo\n\n");
+	}
+	else if((ass>1) && (nset==1)){
+		printf("-----> Cache Totalmente Associativa\n\n");
+	}
+}
+	
 
 void carregaArgumentos(char *argv[]){
 	nsets_L1i = atoi(argv[1]);               // carrega argumentos
@@ -185,7 +219,6 @@ float logBase2(int num){
      return log10(num)/log10(2);         //log base 2
     
 }
-
 void criaCache(){
 	int i,j;
 	//tratando a L1 de instruções
