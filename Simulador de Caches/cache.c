@@ -256,6 +256,7 @@ void sizeTagIndice(int nsets, int bsize){
 	tag = (endereco >> (sizeOffset + sizeIndice));                 // o que restar do endereço sem offset e indice
 }
 void mapeamentoDireto(int endereco,int nsets, int bsize){
+	//Substitução nao é randomica pq é mapeamentoDireto
 	sizeTagIndice(nsets, bsize); //dados da L1
 	if(endereco < XX && le==0){   // DADOS  e leitura                        
 		if(cacheL1_d[indice].bitVal == 0){//Se o bit validade é 0  pq é o primeiro acesso a ela
@@ -265,14 +266,33 @@ void mapeamentoDireto(int endereco,int nsets, int bsize){
 			cacheL1_d[indice].tag = tag; 
 			//Trata a L2-> se um dado está na memória i ela precisa estar em i+1
 			sizeTagIndice(nsets_L2, bsize_L2); //dados L2
-			           
-		} else {//bit validade 1, já usou essa memoria, vai ocorrer hit ou substituicao
+			if (cacheL2[indice].bitVal == 0 ){//vai ter que buscar da memória
+				missL2++;
+				missCompL2++; //Compulsório
+				cacheL2[indice].bitVal=1;
+				cacheL2[indice].tag=tag;
+			}
+			else if (cacheL2[indice].bitVal==1){
+				hitL2++;
+			}			           
+		} 
+		else {//bit validade 1, já usou essa memoria, vai ocorrer hit ou substituicao
 			if(cacheL1_d[indice].tag == tag){             
 				hitL1d++; //encontrou, hit
 			} else {     //nao encontrou, terá que substituir randomicamente                               
 				missL1d++; 
 				missConfL1d++;                // miss conflito
 				cacheL1_d[indice].tag = tag;           // seta novo tag
+				//Trata L2
+				sizeTagIndice(nsets_L2, bsize_L2); //dados L2
+				if(cacheL2[indice].bitVal==0){//Nao se se é possivel acontecer isso, entao vou tratar esse caso
+					//nao vai na memoria pq a informação tá em L1 e precisa ter consistencia de dados
+					cacheL2[indice].bitVal=1;
+					cacheL2[indice].tag= tag;
+				}
+				else {//ATENÇÃO ARRUMAR AQUI PQ É A POLITICA WRITE BACK, ISSO TÁ ERRADO, PRECISA DA FLAG
+					cacheL2[indice].tag= tag; //Atualiza valor 
+					
 			}
 		}
 	}
@@ -300,8 +320,8 @@ void mapeamentoDireto(int endereco,int nsets, int bsize){
 	}
 }
 void decisaoCache(){
+	//Vai para sua devida configuração
 	if(endereco < XX && le==0){//dados
-		//Vai para sua devida configuração
 		configuraCache(assoc_L1d, nsets_L1d, bsize_L1d);
 	}
 	else if(endereco >= XX && le==0){ //Vai para cache de instruções se o endereço for igual a XX ou superior
