@@ -82,6 +82,12 @@ int main(int argc,char *argv[]){ // argc é o numero de elementos e argv são os
 			c=fgetc(arq);
 			d=fgetc(arq);
 			endereco=(a * 256 * 256 * 256) + (b * 256 * 256) + (c * 256) + d;
+			//descobrir se é 0 ou 1
+			a=fgetc(arq);
+			b=fgetc(arq);
+			c=fgetc(arq);
+			d=fgetc(arq);
+			le = (a * 256 * 256 * 256) + (b * 256 * 256) + (c * 256) + d;
 			if(feof(arq)){
 				break;
 			}
@@ -203,8 +209,6 @@ void nomeCache(int ass, int nset){
 		printf("-----> Cache Totalmente Associativa\n\n");
 	}
 }
-	
-
 void carregaArgumentos(char *argv[]){
 	nsets_L1i = atoi(argv[1]);               // carrega argumentos
 	bsize_L1i = atoi(argv[2]);
