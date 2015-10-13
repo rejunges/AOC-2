@@ -105,8 +105,148 @@ int main(int argc,char *argv[]){ // argc é o numero de elementos e argv são os
 
 void conjAssoc(int endereco, int nsets, int bsize){
 }
+
 void totalAssoc(int endereco, int nsets, int bsize){
+	int tamanhoOffset, tamanhoIndice, tamanhoTag, tag, i, aux, flag=0, flagachouL2=0, flagachouL1=0;
+	
+	tamanhoOffset = logBase2(bsize);
+	tamanhoIndice = logBase2(nsets);
+	tamanhoTag = 32-tamanhoOffset-tamanhoIndice;
+	
+	tag = endereco >> (tamanhoOffset + 1);
+	
+	if(endereco<XX){ //endereço menor que valor estipulado para divisão entre memória de dados e memória de instruções - se verdadeiro, entra na mem. de dados
+		//if(bit é LEITURA)
+			for(i=0; i<=assoc_L1d; i++){
+				if((cacheL1_d[i].tag == tag) && (cacheL1_d[i].bitVal == 1)){
+					hitL1d++; //achou na Cache L1 de dados
+					flagachouL1=1;
+					break;
+				}
+			}
+			if(flagachouL1 == 0){
+				missL1d++; //nao achou na Cache L1 de dados, segue para procurar na Cache L2
+				for(i=0; i<assoc_L2; i++){
+					if((cacheL2[i].tag == tag) && (cacheL2[i].bitVal == 1)){
+						hitL2++; //achou na cache L2 e deve transportar o endereço para a L1
+						flagachouL2=1;
+						for(i=0; i<assoc_L1d; i++){
+							if(cacheL1_d[i].bitVal == 0){ //tenta achar uma posição "vazia" ou invalida na cache para transportar o endereço
+								cacheL1_d[i].tag = tag;
+								cacheL1_d[i].bitVal = 1;
+								flag = 1;
+							}
+						}
+						if(flag == 0){ //caso nao ache uma posição vazia, faz substituição randômica
+							aux = rand()%assoc_L1d;
+							cacheL1_d[aux].tag = tag;
+						}
+					}
+					if(flagachouL2 == 1) break;
+				}
+				if(flagachouL2 == 0){
+					missL2++; //não está na cache L1 nem na L2, deve-se pegar da memória principal e transportar para L2 e depois para L1
+					for(i=0; i<assoc_L2; i++){
+						if(cacheL2[i].bitVal == 0){ //achou uma posição "vazia" ou invalida para botar o valor na cache L2
+							cacheL2[i].tag = tag;
+							cacheL2[i].bitVal = 1;
+							flag = 1;
+							break;
+						}
+					}
+					if(flag == 0){
+						aux = rand()%assoc_L2;
+						cacheL2[aux].tag = tag;
+						cacheL2[aux].bitVal = 1;
+					}
+					flag = 0;
+					for(i=0; i<assoc_L1d; i++){
+						if(cacheL1_d[i].bitVal == 0){
+							cacheL1_d[i].tag = tag;
+							cacheL1_d[i].bitVal = 1;
+							flag = 1;
+							break;
+						}
+					}
+					if(flag == 0){
+						aux = rand()%assoc_L1d;
+						cacheL1_d[aux].tag = tag;
+						cacheL1_d[aux].bitVal = 1;
+					}
+				}
+			}
+		//else pra ESCRITA
+		//
+		//
+		//
+	}
+	else{ //endereço é INSTRUÇÃO (acima do XX)
+		//para LEITURA
+			for(i=0; i<=assoc_L1i; i++){
+				if((cacheL1_i[i].tag == tag) && (cacheL1_i[i].bitVal == 1)){
+					hitL1i++; //achou na Cache L1 de dados
+					flagachouL1=1;
+					break;
+				}
+			}
+			if(flagachouL1 == 0){
+				missL1i++; //nao achou na Cache L1 de dados, segue para procurar na Cache L2
+				for(i=0; i<assoc_L2; i++){
+					if((cacheL2[i].tag == tag) && (cacheL2[i].bitVal == 1)){
+						hitL2++; //achou na cache L2 e deve transportar o endereço para a L1
+						flagachouL2=1;
+						for(i=0; i<assoc_L1i; i++){
+							if(cacheL1_i[i].bitVal == 0){ //tenta achar uma posição "vazia" ou invalida na cache para transportar o endereço
+								cacheL1_i[i].tag = tag;
+								cacheL1_i[i].bitVal = 1;
+								flag = 1;
+							}
+						}
+						if(flag == 0){ //caso nao ache uma posição vazia, faz substituição randômica
+							aux = rand()%assoc_L1d;
+							cacheL1_i[aux].tag = tag;
+						}
+					}
+					if(flagachouL2 == 1) break;
+				}
+				if(flagachouL2 == 0){
+					missL2++; //não está na cache L1 nem na L2, deve-se pegar da memória principal e transportar para L2 e depois para L1
+					for(i=0; i<assoc_L2; i++){
+						if(cacheL2[i].bitVal == 0){ //achou uma posição "vazia" ou invalida para botar o valor na cache L2
+							cacheL2[i].tag = tag;
+							cacheL2[i].bitVal = 1;
+							flag = 1;
+							break;
+						}
+					}
+					if(flag == 0){
+						aux = rand()%assoc_L2;
+						cacheL2[aux].tag = tag;
+						cacheL2[aux].bitVal = 1;
+					}
+					flag = 0;
+					for(i=0; i<assoc_L1i; i++){
+						if(cacheL1_i[i].bitVal == 0){
+							cacheL1_i[i].tag = tag;
+							cacheL1_i[i].bitVal = 1;
+							flag = 1;
+							break;
+						}
+					}
+					if(flag == 0){
+						aux = rand()%assoc_L1d;
+						cacheL1_i[aux].tag = tag;
+						cacheL1_i[aux].bitVal = 1;
+					}
+				}
+			}
+		//else pra ESCRITA
+		//
+		//
+		//
+	}
 }
+
 void sizeTagIndice(int nsets, int bsize){
 	sizeOffset = logBase2(bsize);   // Tamanho do offset
 	sizeIndice = logBase2(nsets);   // Tamanho do indice
