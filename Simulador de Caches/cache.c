@@ -89,22 +89,6 @@ int main(int argc,char *argv[]){ // argc é o numero de elementos e argv são os
 			decisaoCache();
 		}
 	}
-			
-	/*	
-	int endereco,i;
-	for (i=0; i<8; i++){
-		cacheL1[i].bitVal=false;
-	}
-	arq = fopen ("entrada.txt", "r");
-	if (arq == NULL){
-		printf ("Erro, não foi possível abrir o arquivo");
-		return 0;
-	}
-	while (fscanf(arq, "%d", &endereco) != EOF){// vai ler endereço por endereço até acabar o arquivo
-		mapeamentoDireto(endereco);
-	}
-
-	printf("MISS:%d\nHIT:%d\n",miss, hit);*/
 	fclose(arq);
 	relatorioDeEstatica();
 	return 0;
@@ -116,23 +100,6 @@ void totalAssoc(int endereco, int nsets, int bsize){
 }
 
 void mapeamentoDireto(int endereco,int nsets, int bsize){
-/*	int indice, tag,sizeOffset=2, sizeIndice=3;
-	indice=endereco % 8; 
-	tag=endereco >>(sizeOffset+sizeIndice);
-	if (cacheL1[indice].bitVal == false){
-		miss++;
-		cacheL1[indice].bitVal = true;
-		cacheL1[indice].tag =tag;
-	}
-	else{
-		if (cacheL1[indice].tag== tag){
-			hit++;
-		}
-		else{
-			miss++;
-			cacheL1[indice].tag=tag;
-		}
-	}*/
 }
 void decisaoCache(){
 	if(endereco < XX && le==0){//dados
