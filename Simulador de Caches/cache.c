@@ -28,6 +28,8 @@ int missL1d=0, missCompL1d=0, missCapL1d=0, missConfL1d=0; //miss da L1 dados
 int missL2=0, missCompL2=0, missCapL2=0, missConfL2=0; // miss da L2
 int XX=3000; //Júlio não especificou, minha cache os endereços abaixo de 3000 são acessos a memória
 int endereco, le; // le é leitura escrita
+int sizeOffset, sizeIndice, sizeTag, indice, tag;
+
 //Funções usadas
 void mapeamentoDireto(int endereco, int nsets, int bsize);
 void conjAssoc(int endereco, int nsets, int bsize);
@@ -44,6 +46,7 @@ void criaCache();
 void nomeCache(int ass, int nset);
 void dadosRelatorio (int mt, int mcom,int mcap,int mconf, int ht);
 void decisaoCache();
+void sizeTagIndice(int nsets, int bsize);
 
 int main(int argc,char *argv[]){ // argc é o numero de elementos e argv são os elementos, começa no 1( pq o 0 é o ./cache )
 	char nomeArq[50], ext[4];
@@ -104,8 +107,57 @@ void conjAssoc(int endereco, int nsets, int bsize){
 }
 void totalAssoc(int endereco, int nsets, int bsize){
 }
-
+void sizeTagIndice(int nsets, int bsize){
+	sizeOffset = logBase2(bsize);   // Tamanho do offset
+	sizeIndice = logBase2(nsets);   // Tamanho do indice
+	sizeTag = 32-sizeIndice-sizeOffset; // Tamanho da tag
+	
+	indice = (endereco >> sizeOffset) && (pow(2,(sizeIndice))-1);  // considerando 2na n, n é o indice
+	tag = (endereco >> (sizeOffset + sizeIndice));                 // o que restar do endereço sem offset e indice
+}
 void mapeamentoDireto(int endereco,int nsets, int bsize){
+	sizeTagIndice(nsets, bsize); //dados da L1
+	if(endereco < XX && le==0){   // DADOS  e leitura                        
+		if(cacheL1_d[indice].bitVal == 0){//Se o bit validade é 0  pq é o primeiro acesso a ela
+			missL1d++;                                   // Miss total de dados sobe
+			missCompL1d++;                              // Esse é compulsorio
+			cacheL1_d[indice].bitVal = 1;       // validade = 1 
+			cacheL1_d[indice].tag = tag; 
+			//Trata a L2-> se um dado está na memória i ela precisa estar em i+1
+			sizeTagIndice(nsets_L2, bsize_L2); //dados L2
+			           
+		} else {//bit validade 1, já usou essa memoria, vai ocorrer hit ou substituicao
+			if(cacheL1_d[indice].tag == tag){             
+				hitL1d++; //encontrou, hit
+			} else {     //nao encontrou, terá que substituir randomicamente                               
+				missL1d++; 
+				missConfL1d++;                // miss conflito
+				cacheL1_d[indice].tag = tag;           // seta novo tag
+			}
+		}
+	}
+	else if(endereco >= XX && le==0){ // INSTRUÇOES
+		if(cacheL1_i[indice].bitVal == 0){
+			missL1i++;
+			missCompL1i++;
+			cacheL1_i[indice].bitVal = 1;
+			cacheL1_i[indice].tag = tag;
+		} else {
+			if(cacheL1_i[indice].tag == tag){
+				hitL1i++;
+			} else { 
+				missL1i++;
+				missConfL1i++;
+				cacheL1_i[indice].tag = tag;
+			}
+		}
+	}
+	else if(endereco < XX && le==1){//dados para escrita metodo write-back
+		//precisa fazer algo por causa do write-back, ainda nao decidido
+	}
+	else if(endereco >= XX && le==1){//instruçoes para escrita metodo write-back
+		//precisa fazer algo por causa do write-back, ainda nao decidido
+	}
 }
 void decisaoCache(){
 	if(endereco < XX && le==0){//dados
