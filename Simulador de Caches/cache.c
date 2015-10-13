@@ -33,6 +33,7 @@ void mapeamentoDireto(int endereco, int nsets, int bsize);
 void conjAssoc(int endereco, int nsets, int bsize);
 void totalAssoc(int endereco, int nsets, int bsize);
 void leExtensao(char *nomeArq, char *ext);
+void configuraCache(int ass, int nsets, int bsize);
 void leArq (char *nomeArq, char *ext);
 void carregaArgumentos(char *argv[]);
 void carregaArgumentosDefault();
@@ -42,6 +43,7 @@ float logBase2(int num);
 void criaCache();
 void nomeCache(int ass, int nset);
 void dadosRelatorio (int mt, int mcom,int mcap,int mconf, int ht);
+void decisaoCache();
 
 int main(int argc,char *argv[]){ // argc é o numero de elementos e argv são os elementos, começa no 1( pq o 0 é o ./cache )
 	char nomeArq[50], ext[4];
@@ -65,40 +67,29 @@ int main(int argc,char *argv[]){ // argc é o numero de elementos e argv são os
 	criaCache();//Cria a L1 de instruções e dados, e cria a L2 também
 	
 	if (strcmp(ext, "txt")==0){//se o arquivo é texto
-			while (fscanf(arq, "%d", &endereco) != EOF){//vai ler linha por linha
-				fscanf(arq, "%d", &le);// A segunda linha informa se é leitura=0 ou escrita=1
-				numAcess++;
-				//endereços  abaixo  de  XX serão considerados acessos a memória de dados(especificação do trabalho)
-				if(endereco < XX && le==0){
-					//Vai para sua devida configuração
-					if((assoc_L1d==1) && (nsets_L1d>1)){                        
-						mapeamentoDireto(endereco, nsets_L1d, bsize_L1d);
-					} 
-					else if((assoc_L1d>1) && (nsets_L1d>1)){ 
-						conjAssoc(endereco, nsets_L1d, bsize_L1d);
-					}
-					else if((assoc_L1d>1) && (nsets_L1d==1)){
-						totalAssoc(endereco, nsets_L1d, bsize_L1d);
-					} 
-				}
-				else if(endereco >= XX && le==0){ //Vai para cache de instruções se o endereço for igual a XX ou superior
-					if((assoc_L1i==1) && (nsets_L1i>1)){                        
-						mapeamentoDireto(endereco, nsets_L1i, bsize_L1i);
-					}
-					else if((assoc_L1i>1) && (nsets_L1i>1)){ 
-						conjAssoc(endereco, nsets_L1i, bsize_L1i);
-					}
-					else if((assoc_L1i>1) && (nsets_L1i==1)){
-						totalAssoc(endereco, nsets_L1i, bsize_L1i);
-					} 
-				}
-				else if(endereco < XX && le==1){//dados para escrita metodo write-back
-				}
-				else if(endereco >= XX && le==1){//instruçoes para escrita metodo write-back
-				}
-				
-			}
+		while (fscanf(arq, "%d", &endereco) != EOF){//vai ler linha por linha
+			fscanf(arq, "%d", &le);// A segunda linha informa se é leitura=0 ou escrita=1
+			numAcess++;
+			decisaoCache();
+		}
 	}
+	else { //arquivo binário
+		int a,b,c,d;
+		while(1){
+			//Como é binário ele vai pegar 1byte por fez, e depois fazer o cálculo para conseguir o valor inteiro
+			a=fgetc(arq);
+			b=fgetc(arq);
+			c=fgetc(arq);
+			d=fgetc(arq);
+			endereco=(a * 256 * 256 * 256) + (b * 256 * 256) + (c * 256) + d;
+			if(feof(arq)){
+				break;
+			}
+			numAcess++;
+			decisaoCache();
+		}
+	}
+			
 	/*	
 	int endereco,i;
 	for (i=0; i<8; i++){
@@ -142,6 +133,32 @@ void mapeamentoDireto(int endereco,int nsets, int bsize){
 			cacheL1[indice].tag=tag;
 		}
 	}*/
+}
+void decisaoCache(){
+	if(endereco < XX && le==0){//dados
+		//Vai para sua devida configuração
+		configuraCache(assoc_L1d, nsets_L1d, bsize_L1d);
+	}
+	else if(endereco >= XX && le==0){ //Vai para cache de instruções se o endereço for igual a XX ou superior
+		configuraCache(assoc_L1i, nsets_L1i, bsize_L1i);
+	}
+	else if(endereco < XX && le==1){//dados para escrita metodo write-back
+		//precisa fazer algo por causa do write-back, ainda nao decidido
+	}
+	else if(endereco >= XX && le==1){//instruçoes para escrita metodo write-back
+		//precisa fazer algo por causa do write-back, ainda nao decidido
+	}
+}
+void configuraCache(int ass, int nsets, int bsize){
+	if((ass==1) && (nsets>1)){                        
+		mapeamentoDireto(endereco, nsets, bsize);
+	} 
+	else if((ass>1) && (nsets>1)){ 
+		conjAssoc(endereco, nsets, bsize);
+	}
+	else if((ass>1) && (nsets==1)){
+		totalAssoc(endereco, nsets, bsize);
+	} 
 }
 
 void validaArgumentos(char *argv[]){
