@@ -20,7 +20,7 @@ typedef struct{
 //Declarações de variáveis 
 cache *cacheL1_i,*cacheL1_d, *cacheL2, **cacheL1Mi, **cacheL1Md, **cacheL2M; 
 FILE *arq;
-int write=0, read=0; // Número de escritas e leituras
+int leituraL1d=0, leituraL1i=0, leituraL2=0, escritaL1d=0, escritaL1i=0,escritaL2=0; // Número de escritas e leituras
 int nsets_L1i, bsize_L1i, assoc_L1i, nsets_L1d, bsize_L1d, assoc_L1d, nsets_L2, bsize_L2, assoc_L2; //referente as caches
 int numAcess=0;
 int hitL1d=0, hitL1i=0, hitL2=0; //hit da L1 d e L1 i, hit da L2
@@ -45,9 +45,9 @@ void validaArgumentos(char *argv[]);
 float logBase2(int num);
 void criaCache();
 void nomeCache(int ass, int nset);
-void dadosRelatorio (int mt, int mcom,int mcap,int mconf, int ht);
+void dadosRelatorio (int mt, int mcom,int mcap,int mconf, int ht, int escrita, int leitura);
 void decisaoCache();
-void sizeTagIndice(int nsets, int bsize);
+void sizeTagIndice(int endereco,int nsets, int bsize);
 void substituiL1L2TA(int DouI);
 
 int main(int argc,char *argv[]){ // argc é o numero de elementos e argv são os elementos, começa no 1( pq o 0 é o ./cache )
@@ -105,114 +105,7 @@ int main(int argc,char *argv[]){ // argc é o numero de elementos e argv são os
 	return 0;
 }
 
-void conjAssoc(int endereco, int nsets, int bsize){
-}
-
-void totalAssoc(int endereco, int nsets, int bsize){
-	int i, aux, flagAchouVazio=0, flagAchouL2=0, flagAchouL1=0, DouI = 0;
-	
-	sizeTagIndice(nsets, bsize);
-	
-	if(endereco<XX)DouI = 0;
-	else DouI = 1;
-	
-	if(DouI == 0){ //endereço menor que valor estipulado para divisão entre memória de dados e memória de instruções - entrou na mem. de dados
-		if(le == 0){ //leitura
-			read++;
-			for(i=0; i<=assoc_L1d; i++){
-				if((cacheL1_d[i].tag == tag) && (cacheL1_d[i].bitVal == 1)){
-					hitL1d++; //achou na Cache L1 de dados
-					flagAchouL1=1;
-					break;
-				}
-			}
-			if(flagAchouL1 == 0){
-				missL1d++; //nao achou na Cache L1 de dados, segue para procurar na Cache L2
-				for(i=0; i<assoc_L2; i++){
-					if((cacheL2[i].tag == tag) && (cacheL2[i].bitVal == 1)){
-						hitL2++; //achou na cache L2 e deve transportar o endereço para a L1
-						flagAchouL2=1;
-						for(i=0; i<assoc_L1d; i++){
-							if(cacheL1_d[i].bitVal == 0){ //tenta achar uma posição "vazia" ou invalida na cache L1 para transportar o endereço
-								cacheL1_d[i].tag = tag;
-								cacheL1_d[i].bitVal = 1;
-								flagAchouVazio = 1;
-								missCompL1d++;
-							}
-						}
-						if(flagAchouVazio == 0){ //caso nao ache uma posição vazia, faz substituição randômica
-							aux = rand()%assoc_L1d;
-							cacheL1_d[aux].tag = tag;
-							missConfL1d++;
-						}
-					}
-					if(flagAchouL2 == 1) break;
-				}
-				if(flagAchouL2 == 0 && flagAchouL1 == 0){
-					missL2++; //não está na cache L1 nem na L2, deve-se pegar da memória principal e transportar para L2 e depois para L1
-					substituiL1L2TA(DouI); //chama a função que vai transportar o valor que não foi achado da memória principal para a cache L2 e, depois L1 de Dados OU Instrução
-				}
-			}
-		}
-		/*if(le == 1){ //escrita
-				for(i=0; i<assoc_L1d ; i++){
-					if(cacheL1_d[i].bitVal == 0){ //tem um espaço vazio, escreve nele
-						cacheL1_d[i].tag = tag;
-						cacheL1_d[i].bitVal = 1;
-						flagAchouVazio = 1;
-						break;
-					}
-				}
-				if(flagAchouVazio = 0){
-					aux = rand()%assoc_L1d;
-						
-		}		*/
-	}
-	else{ //endereço é INSTRUÇÃO (acima do XX)
-		if(le ==0){
-			for(i=0; i<=assoc_L1i; i++){
-				if((cacheL1_i[i].tag == tag) && (cacheL1_i[i].bitVal == 1)){
-					hitL1i++; //achou na Cache L1 de dados
-					flagAchouL1=1;
-					break;
-				}
-			}
-			if(flagAchouL1 == 0){
-				missL1i++; //nao achou na Cache L1 de dados, segue para procurar na Cache L2
-				for(i=0; i<assoc_L2; i++){
-					if((cacheL2[i].tag == tag) && (cacheL2[i].bitVal == 1)){
-						hitL2++; //achou na cache L2 e deve transportar o endereço para a L1
-						flagAchouL2=1;
-						for(i=0; i<assoc_L1i; i++){
-							if(cacheL1_i[i].bitVal == 0){ //tenta achar uma posição "vazia" ou invalida na cache para transportar o endereço
-								cacheL1_i[i].tag = tag;
-								cacheL1_i[i].bitVal = 1;
-								flagAchouVazio = 1;
-								missCompL1i++;
-							}
-						}
-						if(flagAchouVazio == 0){ //caso nao ache uma posição vazia, faz substituição randômica
-							aux = rand()%assoc_L1d;
-							cacheL1_i[aux].tag = tag;
-							missConfL1i++;
-						}
-					}
-					if(flagAchouL2 == 1) break;
-				}
-			}
-			if(flagAchouL2 == 0 && flagAchouL1 == 0){
-				missL2++; //não está na cache L1 nem na L2, deve-se pegar da memória principal e transportar para L2 e depois para L1
-				substituiL1L2TA(DouI);
-			}
-		}
-		//else pra ESCRITA if (le == 1)
-		//
-		//
-		//
-	}
-}
-
-void sizeTagIndice(int nsets, int bsize){
+void sizeTagIndice(int endereco,int nsets, int bsize){
 	sizeOffset = logBase2(bsize);   // Tamanho do offset
 	sizeIndice = logBase2(nsets);   // Tamanho do indice
 	sizeTag = 32-sizeIndice-sizeOffset; // Tamanho da tag
@@ -220,85 +113,14 @@ void sizeTagIndice(int nsets, int bsize){
 	indice = (endereco >> sizeOffset) && (pow(2,(sizeIndice))-1);  // considerando 2na n, n é o indice
 	tag = (endereco >> (sizeOffset + sizeIndice));                 // o que restar do endereço sem offset e indice
 }
-void mapeamentoDireto(int endereco,int nsets, int bsize){
-	//Substitução nao é randomica pq é mapeamentoDireto
-	sizeTagIndice(nsets, bsize); //dados da L1
-	if(endereco < XX && le==0){   // DADOS  e leitura                        
-		if(cacheL1_d[indice].bitVal == 0){//Se o bit validade é 0  pq é o primeiro acesso a ela
-			missL1d++;                                   // Miss total de dados sobe
-			missCompL1d++;                              // Esse é compulsorio
-			cacheL1_d[indice].bitVal = 1;       // validade = 1 
-			cacheL1_d[indice].tag = tag; 
-			//Trata a L2-> se um dado está na memória i ela precisa estar em i+1
-			sizeTagIndice(nsets_L2, bsize_L2); //dados L2
-			if (cacheL2[indice].bitVal == 0 ){//vai ter que buscar da memória
-				missL2++;
-				missCompL2++; //Compulsório
-				cacheL2[indice].bitVal=1;
-				cacheL2[indice].tag=tag;
-			}
-			else if (cacheL2[indice].bitVal==1){
-				hitL2++;
-			}			           
-		} 
-		else {//bit validade 1, já usou essa memoria, vai ocorrer hit ou substituicao
-			if(cacheL1_d[indice].tag == tag){             
-				hitL1d++; //encontrou, hit
-			}
-			else {     //nao encontrou, terá que substituir randomicamente                               
-				missL1d++; 
-				missConfL1d++;                // miss conflito
-				cacheL1_d[indice].tag = tag;           // seta novo tag
-				//Trata L2
-				sizeTagIndice(nsets_L2, bsize_L2); //dados L2
-				if(cacheL2[indice].bitVal==0){//Nao se se é possivel acontecer isso, entao vou tratar esse caso
-					//nao vai na memoria pq a informação tá em L1 e precisa ter consistencia de dados
-					cacheL2[indice].bitVal=1;
-					cacheL2[indice].tag= tag;
-				}
-				else {//ATENÇÃO ARRUMAR AQUI PQ É A POLITICA WRITE BACK, ISSO TÁ ERRADO, PRECISA DA FLAG
-					cacheL2[indice].tag= tag; //Atualiza valor 
-					
-				}
-			}
-		}
-	}
-	else if(endereco >= XX && le==0){ // INSTRUÇOES
-		if(cacheL1_i[indice].bitVal == 0){
-			missL1i++;
-			missCompL1i++;
-			cacheL1_i[indice].bitVal = 1;
-			cacheL1_i[indice].tag = tag;
-		} else {
-			if(cacheL1_i[indice].tag == tag){
-				hitL1i++;
-			} else { 
-				missL1i++;
-				missConfL1i++;
-				cacheL1_i[indice].tag = tag;
-			}
-		}
-	}
-	else if(endereco < XX && le==1){//dados para escrita metodo write-back
-		//precisa fazer algo por causa do write-back, ainda nao decidido
-	}
-	else if(endereco >= XX && le==1){//instruçoes para escrita metodo write-back
-		//precisa fazer algo por causa do write-back, ainda nao decidido
-	}
-}
+
 void decisaoCache(){
-	if(endereco < XX && le==0){//dados
+	if(endereco < XX ){//dados
 		//Vai para sua devida configuração
 		configuraCache(assoc_L1d, nsets_L1d, bsize_L1d);
 	}
-	else if(endereco >= XX && le==0){ //Vai para cache de instruções se o endereço for igual a XX ou superior
+	else if(endereco >= XX ){ //Vai para cache de instruções se o endereço for igual a XX ou superior
 		configuraCache(assoc_L1i, nsets_L1i, bsize_L1i);
-	}
-	else if(endereco < XX && le==1){//dados para escrita metodo write-back
-		//precisa fazer algo por causa do write-back, ainda nao decidido
-	}
-	else if(endereco >= XX && le==1){//instruçoes para escrita metodo write-back
-		//precisa fazer algo por causa do write-back, ainda nao decidido
 	}
 }
 void configuraCache(int ass, int nsets, int bsize){
@@ -345,35 +167,35 @@ void leArq (char *nomeArq, char *ext){
 }
 void relatorioDeEstatistica (){
 	printf ("\n\t\t###############################\n\t\t## Relatório de Estatísticas ##\n\t\t###############################\n\n");
-	printf ("*Número de acessos a memória: %d\n", numAcess);
-	printf ("*Número de escritas na memória: %d\n", write);
-	printf ("*Número de leitura na memória: %d\n\n", read);
+	printf ("*Número de acessos: %d\n", numAcess);
 	printf("\n\n################### Cache L1 de dados ##################\n\n");
 	// Informa qual cache se refere
 	nomeCache(assoc_L1d, nsets_L1d);
-	dadosRelatorio(missL1d, missCompL1d, missCapL1d, missConfL1d, hitL1d);
+	dadosRelatorio(missL1d, missCompL1d, missCapL1d, missConfL1d, hitL1d, escritaL1d, leituraL1d);
 	printf("\n\n################ Cache L1 de instruções ################\n\n");
 	// Informa qual cache se refere
 	nomeCache(assoc_L1i, nsets_L1i);
-	dadosRelatorio(missL1i, missCompL1i, missCapL1i, missConfL1i, hitL1i);
+	dadosRelatorio(missL1i, missCompL1i, missCapL1i, missConfL1i, hitL1i, escritaL1i, leituraL1i);
 	printf("\n\n####################### Cache L2 #######################\n\n");
 	// Informa qual cache se refere
 	nomeCache(assoc_L2, nsets_L2);
-	dadosRelatorio(missL2, missCompL2, missCapL2, missConfL2, hitL2);
+	dadosRelatorio(missL2, missCompL2, missCapL2, missConfL2, hitL2, escritaL2, leituraL2);
 	printf("\n\n########################################################\n\n");
 
 }
-void dadosRelatorio (int mt, int mcom,int mcap,int mconf, int ht){
+void dadosRelatorio (int mt, int mcom,int mcap,int mconf, int ht, int escrita, int leitura){
 	float hr, mr; //hit ratio e miss ratio
 	hr= (float)(ht*100)/numAcess; // hit total * 100 / num acesso = hit ratio
 	mr= (float)(mt*100)/numAcess;
+	printf ("\t*Leitura: %d\n", leitura);
+	printf ("\t*Escrita: %d\n", escrita);
 	printf ("\t*Total de Hit: %d\n", ht);
 	printf ("\t*Total de Miss: %d\n", mt);
-	printf ("\t*Hit Ratio: %f\n", hr);
-	printf ("\t*MIss Ratio: %f\n", mr);
 	printf ("\t\t-Quantidade de Miss Compulsório: %d\n", mcom);
 	printf ("\t\t-Quantidade de Miss de Capacidade: %d\n", mcap);
 	printf ("\t\t-Quantidade de Miss de Conflito: %d\n", mconf);
+	printf ("\t*Hit Ratio: %.2f\n", hr);
+	printf ("\t*MIss Ratio: %.2f\n", mr);
 }
 	
 void nomeCache(int ass, int nset){
@@ -472,6 +294,7 @@ void criaCache(){
 		for(i=0; i<nsets_L1d; i++){
 			cacheL1_d[i].tag = 0;
 			cacheL1_d[i].bitVal = 0;
+			cacheL1_d[i].dirtyBit=0;
 		}
 	}
 	//Mesmo código para a L2
@@ -484,6 +307,7 @@ void criaCache(){
 			for (j=0; j<assoc_L1d; j++){
 				cacheL2M[i][j].bitVal = 0;
 				cacheL2M[i][j].tag = 0;
+				//cacheL2M[i].[j].dirtyBit=0;
 			}
 		}
 	}
@@ -492,6 +316,7 @@ void criaCache(){
 		for(i=0; i<nsets_L1d; i++){
 			cacheL2[i].tag = 0;
 			cacheL2[i].bitVal = 0;
+
 		}
 	}
 }
@@ -559,6 +384,291 @@ void substituiL1L2TA(int DouI){
 				cacheL1_i[aux].tag = tag;
 				cacheL1_i[aux].bitVal = 1;
 			}
+	}
+}
+void conjAssoc(int endereco, int nsets, int bsize){
+}
+
+void totalAssoc(int endereco, int nsets, int bsize){
+	int i, aux, flagAchouVazio=0, flagAchouL2=0, flagAchouL1=0, DouI = 0;
+	
+	sizeTagIndice(endereco,nsets, bsize);
+	
+	if(endereco<XX)DouI = 0;
+	else DouI = 1;
+	
+	if(DouI == 0){ //endereço menor que valor estipulado para divisão entre memória de dados e memória de instruções - entrou na mem. de dados
+		if(le == 0){ //leitura
+			//read++;
+			for(i=0; i<=assoc_L1d; i++){
+				if((cacheL1_d[i].tag == tag) && (cacheL1_d[i].bitVal == 1)){
+					hitL1d++; //achou na Cache L1 de dados
+					flagAchouL1=1;
+					break;
+				}
+			}
+			if(flagAchouL1 == 0){
+				missL1d++; //nao achou na Cache L1 de dados, segue para procurar na Cache L2
+				for(i=0; i<assoc_L2; i++){
+					if((cacheL2[i].tag == tag) && (cacheL2[i].bitVal == 1)){
+						hitL2++; //achou na cache L2 e deve transportar o endereço para a L1
+						flagAchouL2=1;
+						for(i=0; i<assoc_L1d; i++){
+							if(cacheL1_d[i].bitVal == 0){ //tenta achar uma posição "vazia" ou invalida na cache L1 para transportar o endereço
+								cacheL1_d[i].tag = tag;
+								cacheL1_d[i].bitVal = 1;
+								flagAchouVazio = 1;
+								missCompL1d++;
+							}
+						}
+						if(flagAchouVazio == 0){ //caso nao ache uma posição vazia, faz substituição randômica
+							aux = rand()%assoc_L1d;
+							cacheL1_d[aux].tag = tag;
+							missConfL1d++;
+						}
+					}
+					if(flagAchouL2 == 1) break;
+				}
+				if(flagAchouL2 == 0 && flagAchouL1 == 0){
+					missL2++; //não está na cache L1 nem na L2, deve-se pegar da memória principal e transportar para L2 e depois para L1
+					substituiL1L2TA(DouI); //chama a função que vai transportar o valor que não foi achado da memória principal para a cache L2 e, depois L1 de Dados OU Instrução
+				}
+			}
+		}
+		/*if(le == 1){ //escrita
+				for(i=0; i<assoc_L1d ; i++){
+					if(cacheL1_d[i].bitVal == 0){ //tem um espaço vazio, escreve nele
+						cacheL1_d[i].tag = tag;
+						cacheL1_d[i].bitVal = 1;
+						flagAchouVazio = 1;
+						break;
+					}
+				}
+				if(flagAchouVazio = 0){
+					aux = rand()%assoc_L1d;
+						
+		}		*/
+	}
+	else{ //endereço é INSTRUÇÃO (acima do XX)
+		if(le ==0){
+			for(i=0; i<=assoc_L1i; i++){
+				if((cacheL1_i[i].tag == tag) && (cacheL1_i[i].bitVal == 1)){
+					hitL1i++; //achou na Cache L1 de dados
+					flagAchouL1=1;
+					break;
+				}
+			}
+			if(flagAchouL1 == 0){
+				missL1i++; //nao achou na Cache L1 de dados, segue para procurar na Cache L2
+				for(i=0; i<assoc_L2; i++){
+					if((cacheL2[i].tag == tag) && (cacheL2[i].bitVal == 1)){
+						hitL2++; //achou na cache L2 e deve transportar o endereço para a L1
+						flagAchouL2=1;
+						for(i=0; i<assoc_L1i; i++){
+							if(cacheL1_i[i].bitVal == 0){ //tenta achar uma posição "vazia" ou invalida na cache para transportar o endereço
+								cacheL1_i[i].tag = tag;
+								cacheL1_i[i].bitVal = 1;
+								flagAchouVazio = 1;
+								missCompL1i++;
+							}
+						}
+						if(flagAchouVazio == 0){ //caso nao ache uma posição vazia, faz substituição randômica
+							aux = rand()%assoc_L1d;
+							cacheL1_i[aux].tag = tag;
+							missConfL1i++;
+						}
+					}
+					if(flagAchouL2 == 1) break;
+				}
+			}
+			if(flagAchouL2 == 0 && flagAchouL1 == 0){
+				missL2++; //não está na cache L1 nem na L2, deve-se pegar da memória principal e transportar para L2 e depois para L1
+				substituiL1L2TA(DouI);
+			}
+		}
+		//else pra ESCRITA if (le == 1)
+		//
+		//
+		//
+	}
+}
+void mapeamentoDireto(int endereco,int nsets, int bsize){
+	//Substitução nao é randomica pq é mapeamentoDireto
+	sizeTagIndice(endereco,nsets, bsize); //dados da L1
+	if(endereco < XX && le==0){   // DADOS  e leitura                        
+		if(cacheL1_d[indice].bitVal == 0){//Se o bit validade é 0  pq é o primeiro acesso a ela
+			missL1d++;                                   // Miss total de dados sobe
+			missCompL1d++;                              // Esse é compulsorio
+			cacheL1_d[indice].bitVal = 1;       // validade = 1 
+			escritaL1d++; //escreverá em L1d
+			cacheL1_d[indice].tag = tag; 
+			//Trata a L2-> se um dado está na memória i ela precisa estar em i+1
+			sizeTagIndice(endereco,nsets_L2, bsize_L2); //dados L2
+			if (cacheL2[indice].bitVal == 0 ){//vai ter que buscar da memória
+				missL2++;
+				missCompL2++; //Compulsório
+				cacheL2[indice].bitVal=1;
+				escritaL2++;
+				cacheL2[indice].tag=tag;
+			}
+			else if (cacheL2[indice].bitVal==1){
+				hitL2++;
+				leituraL2++;
+			}			           
+		} 
+		else {//bit validade 1, já usou essa memoria, vai ocorrer hit ou substituicao
+			if(cacheL1_d[indice].tag == tag){             
+				hitL1d++; //encontrou, hit
+				leituraL1d++;
+			}
+			else {     //nao encontrou, precisa confererir o dirty                               
+				missL1d++; 
+				missConfL1d++;                // miss conflito
+				if(cacheL1_d[indice].dirtyBit == 0){
+					escritaL1d++;
+					cacheL1_d[indice].tag = tag;           // seta novo tag
+					//Trata L2
+					sizeTagIndice(endereco,nsets_L2, bsize_L2); //dados L2
+					escritaL2++;
+					cacheL2[indice].bitVal=1;
+					cacheL2[indice].tag= tag;
+				}
+				else {// dirtyBit ==1
+					int oldEndereco;
+					//soma em binário para conseguir o endereço antigo para atualizar L2, write-back
+					oldEndereco= ((cacheL1_d[indice].tag << sizeIndice) << sizeOffset) | (sizeIndice << sizeOffset) | sizeOffset;
+					sizeTagIndice(oldEndereco,nsets_L2, bsize_L2);
+					cacheL2[indice].tag= tag; //Atualiza valor 
+					cacheL2[indice].bitVal=1;
+					escritaL2++;
+					sizeTagIndice(endereco,nsets, bsize); //dados da L1
+					cacheL1_d[indice].tag=tag;
+					escritaL1d++;
+				}
+			}
+		}
+	}
+	else if(endereco >= XX && le==0){ // INSTRUÇOES
+		if(cacheL1_i[indice].bitVal == 0){//Se o bit validade é 0  pq é o primeiro acesso a ela
+			missL1i++;                                   // Miss total de dados sobe
+			missCompL1i++;                              // Esse é compulsorio
+			cacheL1_i[indice].bitVal = 1;       // validade = 1 
+			escritaL1i++; //escreverá em L1d
+			cacheL1_i[indice].tag = tag; 
+			//Trata a L2-> se um dado está na memória i ela precisa estar em i+1
+			sizeTagIndice(endereco,nsets_L2, bsize_L2); //dados L2
+			if (cacheL2[indice].bitVal == 0 ){//vai ter que buscar da memória
+				missL2++;
+				missCompL2++; //Compulsório
+				cacheL2[indice].bitVal=1;
+				escritaL2++;
+				cacheL2[indice].tag=tag;
+			}
+			else if (cacheL2[indice].bitVal==1){
+				hitL2++;
+				leituraL2++;
+			}			           
+		} 
+		else {//bit validade 1, já usou essa memoria, vai ocorrer hit ou substituicao
+			if(cacheL1_i[indice].tag == tag){             
+				hitL1i++; //encontrou, hit
+				leituraL1i++;
+			}
+			else {     //nao encontrou, precisa confererir o dirty                               
+				missL1i++; 
+				missConfL1i++;                // miss conflito
+				if(cacheL1_i[indice].dirtyBit == 0){
+					escritaL1i++;
+					cacheL1_i[indice].tag = tag;           // seta novo tag
+					//Trata L2
+					sizeTagIndice(endereco,nsets_L2, bsize_L2); //dados L2
+					escritaL2++;
+					cacheL2[indice].bitVal=1;
+					cacheL2[indice].tag= tag;
+				}
+				else {// dirtyBit ==1
+					int oldEndereco;
+					//soma em binário para conseguir o endereço antigo para atualizar L2, write-back
+					oldEndereco= ((cacheL1_i[indice].tag << sizeIndice) << sizeOffset) | (sizeIndice << sizeOffset) | sizeOffset;
+					sizeTagIndice(oldEndereco,nsets_L2, bsize_L2);
+					cacheL2[indice].tag= tag; //Atualiza valor 
+					cacheL2[indice].bitVal=1;
+					escritaL2++;
+					sizeTagIndice(endereco,nsets, bsize); //dados da L1
+					cacheL1_i[indice].tag=tag;
+					escritaL1i++;
+				}
+			}
+		}
+	}
+	else if(endereco < XX && le==1){//dados para escrita metodo write-back
+		//precisa fazer algo por causa do write-back
+		if(cacheL1_d[indice].bitVal == 0){//Se o bit validade é 0  pq é o primeiro acesso a ela
+			cacheL1_d[indice].bitVal = 1;       // validade = 1 
+			escritaL1d++; //escreverá em L1d
+			cacheL1_d[indice].tag = tag; 
+			cacheL1_d[indice].dirtyBit=1; //ocorreu uma escrita e nao ocorreu atualização em L2
+		} 
+		else {//bit validade 1, já usou essa memoria, vai ter que atualizar L2 e depois L1
+			if(cacheL1_d[indice].tag == tag){             
+				//hitL1d++; //encontrou, hit
+				//é escrita, o que ia escrever já está escrita, nao faz nada então. CONFERIR
+			}
+			else {     //nao encontrou, precisa confererir o dirty                               
+				if(cacheL1_d[indice].dirtyBit == 0){
+					escritaL1d++;
+					cacheL1_d[indice].tag = tag;           // seta novo tag
+					cacheL1_d[indice].dirtyBit=1;
+				}
+				else {// dirtyBit ==1, dai precisa atualizar L2
+					int oldEndereco;
+					//soma em binário para conseguir o endereço antigo para atualizar L2, write-back
+					oldEndereco= ((cacheL1_d[indice].tag << sizeIndice) << sizeOffset) | (sizeIndice << sizeOffset) | sizeOffset;
+					sizeTagIndice(oldEndereco,nsets_L2, bsize_L2);
+					cacheL2[indice].tag= tag; //Atualiza valor 
+					cacheL2[indice].bitVal=1;
+					escritaL2++;
+					sizeTagIndice(endereco,nsets, bsize); //dados da L1
+					cacheL1_d[indice].tag=tag;
+					escritaL1d++;
+				}
+			}
+		}
+	}
+	else if(endereco >= XX && le==1){//instruçoes para escrita metodo write-back
+		//precisa fazer algo por causa do write-back
+		//precisa fazer algo por causa do write-back
+		if(cacheL1_i[indice].bitVal == 0){//Se o bit validade é 0  pq é o primeiro acesso a ela
+			cacheL1_i[indice].bitVal = 1;       // validade = 1 
+			escritaL1i++; //escreverá em L1d
+			cacheL1_i[indice].tag = tag; 
+			cacheL1_i[indice].dirtyBit=1; //ocorreu uma escrita e nao ocorreu atualização em L2
+		} 
+		else {//bit validade 1, já usou essa memoria, vai ter que atualizar L2 e depois L1
+			if(cacheL1_i[indice].tag == tag){             
+				//hitL1d++; //encontrou, hit
+				//é escrita, o que ia escrever já está escrita, nao faz nada então. CONFERIR
+			}
+			else {     //nao encontrou, precisa confererir o dirty                               
+				if(cacheL1_i[indice].dirtyBit == 0){
+					escritaL1i++;
+					cacheL1_i[indice].tag = tag;           // seta novo tag
+					cacheL1_i[indice].dirtyBit=1;
+				}
+				else {// dirtyBit ==1, dai precisa atualizar L2
+					int oldEndereco;
+					//soma em binário para conseguir o endereço antigo para atualizar L2, write-back
+					oldEndereco= ((cacheL1_i[indice].tag << sizeIndice) << sizeOffset) | (sizeIndice << sizeOffset) | sizeOffset;
+					sizeTagIndice(oldEndereco,nsets_L2, bsize_L2);
+					cacheL2[indice].tag= tag; //Atualiza valor 
+					cacheL2[indice].bitVal=1;
+					escritaL2++;
+					sizeTagIndice(endereco,nsets, bsize); //dados da L1
+					cacheL1_i[indice].tag=tag;
+					escritaL1i++;
+				}
+			}
+		}
 	}
 }
 
