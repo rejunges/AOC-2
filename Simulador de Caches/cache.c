@@ -4,13 +4,6 @@
 #include <math.h>
 #include <string.h>
 #include <time.h>
-
-/*A  política  de  substituição  será  sempre  randômica -> rand() % posições.  Já  a  política  de  escrita  deverá  ser write-back.
- * A informação é escrita somente no bloco da cache, e só será escrito na memória principal quando for substituído
- * Endereço do bloco % Numero de blocos da cache
- * assoc=1; nSet=8, bSize=4 ->Mapeamento direto
- *1<nsets_L1i> 2<bsize_L1i> 3<assoc_L1i> 4<nsets_L1d> 5<bsize_L1d> 6<assoc_L1d> 7<nsets_L2> 8<bsize_L2> 9<assoc_L2> 10arquivo_de_entrada*/
-//leitura = 0 , escrita = 1
 typedef struct{
 	int bitVal;
 	int tag;
@@ -27,7 +20,7 @@ int hitL1d=0, hitL1i=0, hitL2=0; //hit da L1 d e L1 i, hit da L2
 int missL1i=0, missCompL1i=0, missCapL1i=0, missConfL1i=0; //miss da L1 instruções
 int missL1d=0, missCompL1d=0, missCapL1d=0, missConfL1d=0; //miss da L1 dados
 int missL2=0, missCompL2=0, missCapL2=0, missConfL2=0; // miss da L2
-int XX=500; //Júlio não especificou, minha cache os endereços abaixo de 3000 são acessos a memória
+int XX=50000; //Júlio não especificou, na cache os endereços abaixo de XX
 int endereco, le; // le é leitura escrita
 int sizeOffset, sizeIndice, sizeTag, indice, tag;
 
@@ -110,8 +103,11 @@ void sizeTagIndice(int endereco,int nsets, int bsize){
 	sizeIndice = logBase2(nsets);   // Tamanho do indice
 	sizeTag = 32-sizeIndice-sizeOffset; // Tamanho da tag
 
-	indice = (endereco >> sizeOffset) && (pow(2,(sizeIndice))-1);  // considerando 2na n, n é o indice
-	tag = (endereco >> (sizeOffset + sizeIndice));                 // o que restar do endereço sem offset e indice
+	indice = (endereco)%(nsets);				// considerando 2na n, n é o indice
+	printf("SizeOffset:%d\n", sizeOffset);
+	printf ("Indice: %d\n\n",indice);
+	tag = (endereco >> (sizeOffset >> sizeIndice));                 // o que restar do endereço sem offset e indice
+	printf("TAG:%d\n\n", tag);
 }
 
 void decisaoCache(){
@@ -224,13 +220,13 @@ void carregaArgumentos(char *argv[]){
 void carregaArgumentosDefault(){
 	/*cache com mapeamento direto com tamanho de bloco de 4 bytes
 	 * e com 1024 conjuntos (nas duas caches)*/
-	nsets_L1i = 1024;
+	nsets_L1i = 8;
 	bsize_L1i = 4;
 	assoc_L1i = 1;
-	nsets_L1d = 1024;
+	nsets_L1d = 8;
 	bsize_L1d = 4;
 	assoc_L1d = 1;
-	nsets_L2 = 1024;
+	nsets_L2 = 8;
 	bsize_L2 = 4;
 	assoc_L2 = 1;
 }
@@ -850,6 +846,7 @@ void totalAssoc(int endereco, int nsets, int bsize){
 void mapeamentoDireto(int endereco,int nsets, int bsize){
 	//Substitução nao é randomica pq é mapeamentoDireto
 	sizeTagIndice(endereco,nsets, bsize); //dados da L1
+	printf ("Endereco:%d 	Indice:%d\n", endereco, indice);
 	if(endereco < XX && le==0){   // DADOS  e leitura
 		if(cacheL1_d[indice].bitVal == 0){//Se o bit validade é 0  pq é o primeiro acesso a ela
 			missL1d++;                                   // Miss total de dados sobe
