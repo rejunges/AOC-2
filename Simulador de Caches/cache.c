@@ -853,7 +853,6 @@ void mapeamentoDireto(int endereco,int nsets, int bsize){
 
 	if(endereco < XX && le==0){   // DADOS  e leitura
 		sizeTagIndice(endereco,nsets, bsize, assoc_L1d);
-		printf ("Endereco:%d 	Indice:%d\n", endereco, indice);
 		if(cacheL1_d[indice].bitVal == 0){//Se o bit validade é 0  pq é o primeiro acesso a ela
 			missL1d++;                                   // Miss total de dados sobe
 			missCompL1d++;                              // Esse é compulsorio
@@ -930,7 +929,6 @@ void mapeamentoDireto(int endereco,int nsets, int bsize){
 	}
 	else if(endereco >= XX && le==0){ // INSTRUÇOES
 		sizeTagIndice(endereco,nsets, bsize, assoc_L1i);
-		printf ("Endereco:%d 	Indice:%d\n", endereco, indice);
 		if(cacheL1_i[indice].bitVal == 0){//Se o bit validade é 0  pq é o primeiro acesso a ela
 			missL1i++;                                   // Miss total de dados sobe
 			missCompL1i++;                              // Esse é compulsorio
@@ -1008,7 +1006,6 @@ void mapeamentoDireto(int endereco,int nsets, int bsize){
 	else if(endereco < XX && le==1){//dados para escrita metodo write-back
 		//precisa fazer algo por causa do write-back
 		sizeTagIndice(endereco,nsets, bsize, assoc_L1d);
-		printf ("Endereco:%d 	Indice:%d\n", endereco, indice);
 		if(cacheL1_d[indice].bitVal == 0){//Se o bit validade é 0  pq é o primeiro acesso a ela
 			cacheL1_d[indice].bitVal = 1;       // validade = 1
 			escritaL1d++; //escreverá em L1d
@@ -1017,7 +1014,7 @@ void mapeamentoDireto(int endereco,int nsets, int bsize){
 		}
 		else {//bit validade 1, já usou essa memoria, vai ter que atualizar L2 e depois L1
 			if(cacheL1_d[indice].tag == tag){
-				hitL1d++; //encontrou, hit
+				//hitL1d++; //encontrou, hit
 				//é escrita, o que ia escrever já está escrita, nao faz nada então.
 			}
 			else {     //nao encontrou, precisa confererir o dirty
@@ -1044,7 +1041,6 @@ void mapeamentoDireto(int endereco,int nsets, int bsize){
 	else if(endereco >= XX && le==1){//instruçoes para escrita metodo write-back
 		//precisa fazer algo por causa do write-back
 		sizeTagIndice(endereco,nsets, bsize, assoc_L1i);
-		printf ("Endereco:%d 	Indice:%d\n", endereco, indice);
 		if(cacheL1_i[indice].bitVal == 0){//Se o bit validade é 0  pq é o primeiro acesso a ela
 			cacheL1_i[indice].bitVal = 1;       // validade = 1
 			escritaL1i++; //escreverá em L1d
@@ -1053,7 +1049,7 @@ void mapeamentoDireto(int endereco,int nsets, int bsize){
 		}
 		else {//bit validade 1, já usou essa memoria, vai ter que atualizar L2 e depois L1
 			if(cacheL1_i[indice].tag == tag){
-				hitL1i++; //encontrou, hit
+				//hitL1i++; //encontrou, hit
 				//é escrita, o que ia escrever já está escrita, nao faz nada então. CONFERIR
 			}
 			else {     //nao encontrou, precisa confererir o dirty
