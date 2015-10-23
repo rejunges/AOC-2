@@ -103,11 +103,11 @@ void sizeTagIndice(int endereco,int nsets, int bsize, int assoc){
 	sizeTag = 32-sizeIndice-sizeOffset; // Tamanho da tag
 
 	indice = (endereco)%(nsets);				// considerando 2na n, n é o indice
-	printf("SizeOffset:%d\n", sizeOffset);
-	printf("SizeIndice:%d\n", sizeIndice);
-	printf ("Indice: %d\n\n",indice);
+	//printf("SizeOffset:%d\n", sizeOffset);
+	//printf("SizeIndice:%d\n", sizeIndice);
+	//printf ("Indice: %d\n\n",indice);
 	tag = (endereco >> (sizeOffset >> sizeIndice));                 // o que restar do endereço sem offset e indice
-	printf("TAG:%d\n\n", tag);
+	//printf("TAG:%d\n\n", tag);
 }
 
 void decisaoCache(){
@@ -851,14 +851,15 @@ void totalAssoc(int endereco, int nsets, int bsize){
 void mapeamentoDireto(int endereco,int nsets, int bsize){
 	//Substitução nao é randomica pq é mapeamentoDireto
 
-	printf ("Endereco:%d 	Indice:%d\n", endereco, indice);
 	if(endereco < XX && le==0){   // DADOS  e leitura
 		sizeTagIndice(endereco,nsets, bsize, assoc_L1d);
+		printf ("Endereco:%d 	Indice:%d\n", endereco, indice);
 		if(cacheL1_d[indice].bitVal == 0){//Se o bit validade é 0  pq é o primeiro acesso a ela
 			missL1d++;                                   // Miss total de dados sobe
 			missCompL1d++;                              // Esse é compulsorio
 			cacheL1_d[indice].bitVal = 1;       // validade = 1
 			escritaL1d++; //escreverá em L1d
+			leituraL1d++; //Vai escrever mas também vai ler
 			cacheL1_d[indice].tag = tag;
 			//Trata a L2-> se um dado está na memória i ela precisa estar em i+1
 			sizeTagIndice(endereco,nsets_L2, bsize_L2, assoc_L2); //dados L2
@@ -867,17 +868,20 @@ void mapeamentoDireto(int endereco,int nsets, int bsize){
 				missCompL2++; //Compulsório
 				cacheL2[indice].bitVal=1;
 				escritaL2++;
+				leituraL2++;
 				cacheL2[indice].tag=tag;
 			}
-			else{ if (cacheL2[indice].bitVal==1 && cacheL2[indice].tag == tag){
-				hitL2++;
-				leituraL2++;
-			}
-				 if (cacheL2[indice].bitVal==1 && cacheL2[indice].tag != tag){ //dado não está em L2, pega da memória principal e traz pra L2
+			else{ 
+				if (cacheL2[indice].bitVal==1 && cacheL2[indice].tag == tag){
+					hitL2++;
+					leituraL2++;
+				}
+				if (cacheL2[indice].bitVal==1 && cacheL2[indice].tag != tag){ //dado não está em L2, pega da memória principal e traz pra L2
 					missL2++;
 					missConfL2++;
 					cacheL2[indice].tag = tag;
 					escritaL2++;
+					leituraL2++;
 				}
 			}
 		}
@@ -891,11 +895,15 @@ void mapeamentoDireto(int endereco,int nsets, int bsize){
 				missConfL1d++;                // miss conflito
 				if(cacheL1_d[indice].dirtyBit == 0){
 					escritaL1d++;
+					leituraL1d++;
 					cacheL1_d[indice].tag = tag;           // seta novo tag
 					//Trata L2
 					sizeTagIndice(endereco,nsets_L2, bsize_L2, assoc_L2); //dados L2
 					if(cacheL2[indice].tag != tag){ //só vai escrever se o que houver na L2 não for o dado desejado
+						missL2++;
+						missCompL2++;
 						escritaL2++;
+						leituraL2++;
 						cacheL2[indice].bitVal=1;
 						cacheL2[indice].tag= tag;
 					}
@@ -915,17 +923,20 @@ void mapeamentoDireto(int endereco,int nsets, int bsize){
 					sizeTagIndice(endereco,nsets, bsize, assoc_L1d); //dados da L1
 					cacheL1_d[indice].tag=tag;
 					escritaL1d++;
+					leituraL1d++;
 				}
 			}
 		}
 	}
 	else if(endereco >= XX && le==0){ // INSTRUÇOES
 		sizeTagIndice(endereco,nsets, bsize, assoc_L1i);
+		printf ("Endereco:%d 	Indice:%d\n", endereco, indice);
 		if(cacheL1_i[indice].bitVal == 0){//Se o bit validade é 0  pq é o primeiro acesso a ela
 			missL1i++;                                   // Miss total de dados sobe
 			missCompL1i++;                              // Esse é compulsorio
 			cacheL1_i[indice].bitVal = 1;       // validade = 1
 			escritaL1i++; //escreverá em L1d
+			leituraL1i++;
 			cacheL1_i[indice].tag = tag;
 			//Trata a L2-> se um dado está na memória i ela precisa estar em i+1
 			sizeTagIndice(endereco,nsets_L2, bsize_L2, assoc_L2); //dados L2
@@ -934,17 +945,20 @@ void mapeamentoDireto(int endereco,int nsets, int bsize){
 				missCompL2++; //Compulsório
 				cacheL2[indice].bitVal=1;
 				escritaL2++;
+				leituraL2++;
 				cacheL2[indice].tag=tag;
 			}
-			else{ if (cacheL2[indice].bitVal==1 && cacheL2[indice].tag == tag){
-				hitL2++;
-				leituraL2++;
-			}
+			else{ 
+				if (cacheL2[indice].bitVal==1 && cacheL2[indice].tag == tag){
+					hitL2++;
+					leituraL2++;
+				}
 				 if (cacheL2[indice].bitVal==1 && cacheL2[indice].tag != tag){
 					missL2++;
 					missConfL2++;
 					cacheL2[indice].tag = tag;
 					escritaL2++;
+					leituraL2++;
 				}
 			}
 		}
@@ -958,11 +972,15 @@ void mapeamentoDireto(int endereco,int nsets, int bsize){
 				missConfL1i++;                // miss conflito
 				if(cacheL1_i[indice].dirtyBit == 0){
 					escritaL1i++;
+					leituraL1i++;
 					cacheL1_i[indice].tag = tag;           // seta novo tag
 					//Trata L2
 					sizeTagIndice(endereco,nsets_L2, bsize_L2, assoc_L2); //dados L2
 					if(cacheL2[indice].tag != tag){
+						missL2++;
+						missCompL2++;
 						escritaL2++;
+						leituraL2++;
 						cacheL2[indice].bitVal=1;
 						cacheL2[indice].tag= tag;
 					}
@@ -982,6 +1000,7 @@ void mapeamentoDireto(int endereco,int nsets, int bsize){
 					sizeTagIndice(endereco,nsets, bsize, assoc_L1i); //dados da L1
 					cacheL1_i[indice].tag=tag;
 					escritaL1i++;
+					leituraL1i++;
 				}
 			}
 		}
@@ -989,6 +1008,7 @@ void mapeamentoDireto(int endereco,int nsets, int bsize){
 	else if(endereco < XX && le==1){//dados para escrita metodo write-back
 		//precisa fazer algo por causa do write-back
 		sizeTagIndice(endereco,nsets, bsize, assoc_L1d);
+		printf ("Endereco:%d 	Indice:%d\n", endereco, indice);
 		if(cacheL1_d[indice].bitVal == 0){//Se o bit validade é 0  pq é o primeiro acesso a ela
 			cacheL1_d[indice].bitVal = 1;       // validade = 1
 			escritaL1d++; //escreverá em L1d
@@ -1024,6 +1044,7 @@ void mapeamentoDireto(int endereco,int nsets, int bsize){
 	else if(endereco >= XX && le==1){//instruçoes para escrita metodo write-back
 		//precisa fazer algo por causa do write-back
 		sizeTagIndice(endereco,nsets, bsize, assoc_L1i);
+		printf ("Endereco:%d 	Indice:%d\n", endereco, indice);
 		if(cacheL1_i[indice].bitVal == 0){//Se o bit validade é 0  pq é o primeiro acesso a ela
 			cacheL1_i[indice].bitVal = 1;       // validade = 1
 			escritaL1i++; //escreverá em L1d
