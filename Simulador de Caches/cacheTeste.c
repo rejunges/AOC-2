@@ -199,7 +199,7 @@ void totalAssoc(cache *cacheL, int endereco, int nsets, int bsize, int assoc, Es
 						oldEndereco = ((cacheL[aux].tag << sizeIndice) << sizeOffset) | (sizeIndice << sizeOffset) | sizeOffset;
 						cacheL[aux].tag = tag;
 						(*L).escrita++;
-						endereco = oldEndereco; //O endereco que vai ser atualizado em L2 é o endereco antigo
+						endereco = oldEndereco; //O endereco que vvai ser atualizado em L2 é o endereco antigo
 						decisaoCacheUnificada();
 					}
 				}
@@ -619,7 +619,14 @@ void decisaoCacheSeparada(){
 }
 void validaArgumentos(char *argv[]){
 	int i;
+	
 	for(i=1; i<10; i++){
+		if ((logBase2(atoi(argv[i]))-(int)(logBase2(atoi(argv[i]))))!=0){          // ve se os argumentos podem ser aceitos
+			if((atoi(argv[i]))!=1){
+				printf("ERRO: Argumentos Invalidos!\n");     // Verifica argumentos
+				exit(1);
+			}
+		}
 		if((atoi(argv[i]))<=0){                                // Verifica Argumentos
 			printf("ERRO: Argumentos Invalidos!\n");
 			exit(1);
