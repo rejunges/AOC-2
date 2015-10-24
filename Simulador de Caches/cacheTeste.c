@@ -229,7 +229,6 @@ void totalAssoc(cache *cacheL, int endereco, int nsets, int bsize, int assoc, Es
 
 void conjAssoc(cache **cacheL, int endereco, int nsets, int bsize, int assoc, Estatistica* L){
 	int i, flag = 0, flag2 = 0, aux;
-	
 	if(le == 0){ //leitura pra qualquer cache, tanto L1d ou L1i como L2
 		sizeTagIndice(endereco, nsets, bsize);
 		for(i=0; i<assoc; i++){
@@ -346,8 +345,6 @@ void conjAssoc(cache **cacheL, int endereco, int nsets, int bsize, int assoc, Es
 		}
 	}				
 }
-
-
 void mapeamentoDireto(cache *cacheL, int endereco, int nsets, int bsize, int assoc, Estatistica* L){
 	//L1 ou L2 se for leitura, e os tratamentos caso seja cache L1 são feitos dentro desse laço
 	if(le==0){
