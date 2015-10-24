@@ -31,8 +31,8 @@ Estatistica L1i, L1d, L2;
 //Funções
 void totalAssoc(cache *cacheL, int endereco, int nsets, int bsize, int assoc, Estatistica* L);
 void conjAssoc(cache **cacheL, int endereco, int nsets, int bsize, int assoc, Estatistica *L);
-void mapeamentoDireto(cache* cacheL, int endereco, int nsets, int bsize, Estatistica* L);
-void sizeTagIndice(int endereco,int nsets, int bsize);
+void mapeamentoDireto(cache* cacheL, int endereco, int nsets, int bsize, int assoc, Estatistica* L);
+void sizeTagIndice(int endereco, int nsets, int bsize, int assoc);
 void zeraEstatistica(Estatistica *L);
 void dadosRelatorio (Estatistica *L);
 void nomeCache(int tipo);
@@ -111,7 +111,7 @@ void totalAssoc(cache *cacheL, int endereco, int nsets, int bsize, int assoc, Es
 	int i, flag = 0, flag2 = 0, aux;
 	
 	if(le == 0){ //leitura pra qualquer cache, tanto L1d ou L1i como L2
-		sizeTagIndice(endereco, nsets, bsize);
+		sizeTagIndice(endereco, nsets, bsize, assoc);
 		for(i=0; i<assoc; i++){
 			if(cacheL[i].tag == tag && cacheL[i].bitVal == 1){ //HIT
 				(*L).hit++;
@@ -169,7 +169,7 @@ void totalAssoc(cache *cacheL, int endereco, int nsets, int bsize, int assoc, Es
 	}
 	else{ //casos de escrita, difere para L1 e L2
 		if(le == 1 && (*L).nivel == 1){
-			sizeTagIndice(endereco, nsets, bsize);
+			sizeTagIndice(endereco, nsets, bsize, assoc);
 			for(i=0; i<assoc; i++){ //confere primeiro se o que quer ser escrito já não existe na cache
 				if(cacheL[i].tag == tag && cacheL[i].bitVal == 1){
 					(*L).hit++;
@@ -208,7 +208,7 @@ void totalAssoc(cache *cacheL, int endereco, int nsets, int bsize, int assoc, Es
 			}
 		}
 		if(le == 1 && (*L).nivel == 2){ //escrita na L2, não há preocupação com o dirty bit nesse caso. Primeiro, procura espaço livre para escrever, se não houver, insere em bloco aleatório
-			sizeTagIndice(endereco, nsets, bsize);
+			sizeTagIndice(endereco, nsets, bsize, assoc);
 			for(i=0; i<assoc; i++){ //procura um espaço "livre" na cache para inserir o valor
 				if(cacheL[i].bitVal == 0){ //achou um espaço "livre" -> com bit de validade 0
 					cacheL[i].bitVal = 1;
@@ -231,7 +231,7 @@ void conjAssoc(cache **cacheL, int endereco, int nsets, int bsize, int assoc, Es
 	int i, flag = 0, flag2 = 0, aux;
 	
 	if(le == 0){ //leitura pra qualquer cache, tanto L1d ou L1i como L2
-		sizeTagIndice(endereco, nsets, bsize);
+		sizeTagIndice(endereco, nsets, bsize, assoc);
 		for(i=0; i<assoc; i++){
 			if(cacheL[indice][i].tag == tag && cacheL[indice][i].bitVal == 1){
 				(*L).hit++;
@@ -289,7 +289,7 @@ void conjAssoc(cache **cacheL, int endereco, int nsets, int bsize, int assoc, Es
 	}
 	else{ //casos de escrita, difere para L1 e L2
 		if(le == 1 && (*L).nivel == 1){
-			sizeTagIndice(endereco, nsets, bsize);
+			sizeTagIndice(endereco, nsets, bsize, assoc);
 			for(i=0; i<assoc; i++){ //confere primeiro se o que quer ser escrito já não existe na cache
 				if(cacheL[indice][i].tag == tag && cacheL[indice][i].bitVal == 1){
 					(*L).hit++;
@@ -328,7 +328,7 @@ void conjAssoc(cache **cacheL, int endereco, int nsets, int bsize, int assoc, Es
 			}
 		}
 		if(le == 1 && (*L).nivel == 2){ //escrita na L2, não há preocupação com o dirty bit nesse caso. Primeiro, procura espaço livre para escrever, se não houver, insere em bloco aleatório
-			sizeTagIndice(endereco, nsets, bsize);
+			sizeTagIndice(endereco, nsets, bsize, assoc);
 			for(i=0; i<assoc; i++){ //procura um espaço "livre" na cache para inserir o valor
 				if(cacheL[indice][i].bitVal == 0){ //achou um espaço "livre" -> com bit de validade 0
 					cacheL[indice][i].bitVal = 1;
@@ -348,11 +348,11 @@ void conjAssoc(cache **cacheL, int endereco, int nsets, int bsize, int assoc, Es
 }
 
 
-void mapeamentoDireto(cache *cacheL, int endereco, int nsets, int bsize, Estatistica* L){
+void mapeamentoDireto(cache *cacheL, int endereco, int nsets, int bsize, int assoc, Estatistica* L){
 	
 	//L1 ou L2 se for leitura, e os tratamentos caso seja cache L1 são feitos dentro desse laço
 	if(le==0){
-		sizeTagIndice(endereco,nsets, bsize);
+		sizeTagIndice(endereco,nsets, bsize, assoc);
 		if(cacheL[indice].bitVal == 0){//Se o bit validade é 0  pq é o primeiro acesso a ela
 			(*L).miss++;                                   // Miss total de dados sobe
 			(*L).missComp++;                              // Esse é compulsorio
@@ -408,7 +408,7 @@ void mapeamentoDireto(cache *cacheL, int endereco, int nsets, int bsize, Estatis
 	// L1(dado ou instrucao) escrita
 	else if(le==1 && (*L).nivel==1){ // metodo write-back
 		//precisa fazer algo por causa do write-back
-		sizeTagIndice(endereco,nsets, bsize);
+		sizeTagIndice(endereco,nsets, bsize, assoc);
 		if(cacheL[indice].bitVal == 0){//Se o bit validade é 0  pq é o primeiro acesso a ela
 			//nao dá miss, porque seria um miss write e eles serão desconsiderados
 			cacheL[indice].bitVal = 1;       // validade = 1
@@ -442,17 +442,17 @@ void mapeamentoDireto(cache *cacheL, int endereco, int nsets, int bsize, Estatis
 	}
 	//escrita em L2
 	else if(le==1 && (*L).nivel==2){
-		sizeTagIndice(endereco,nsets, bsize);
+		sizeTagIndice(endereco,nsets, bsize, assoc);
 		cacheL[indice].tag= tag; //Atualiza valor
 		cacheL[indice].bitVal=1;
 		(*L).escrita++;
 	}
 }
-void sizeTagIndice(int endereco,int nsets, int bsize){
+void sizeTagIndice(int endereco, int nsets, int bsize, int assoc){
 	sizeOffset = logBase2(bsize);   // Tamanho do offset
-	sizeIndice = logBase2(nsets);   // Tamanho do indice
+	sizeIndice = logBase2(nsets/assoc);   // Tamanho do indice
 	sizeTag = 32-sizeIndice-sizeOffset; // Tamanho da tag
-	indice = (endereco)%(nsets);				// considerando 2na n, n é o indice
+	indice = (endereco)%(nsets/assoc);				// considerando 2na n, n é o indice
 	tag = (endereco >> (sizeOffset >> sizeIndice));                 // o que restar do endereço sem offset e indice
 }
 void zeraEstatistica(Estatistica* L){
@@ -582,7 +582,7 @@ int defineTipos(int ass, int nsets){
 	else if((ass>1) && (nsets>1)){
 		tipo=2; //conjunto associativa
 	}
-	else if((ass>1) && (nsets==1)){
+	else if((ass>1) && (nsets == ass)){ //só é totalmente associativa se o numero de associatividade é igual ao numero de blocos
 		tipo=3; //totalmente associativa
 	}
 	return tipo;
@@ -590,7 +590,7 @@ int defineTipos(int ass, int nsets){
 void decisaoCacheUnificada(){
 	//Referente a cache L2 ( unica unificada
 	if(tipoL2==1){
-		mapeamentoDireto(cacheL2, endereco, nsets_L2, bsize_L2, &L2);
+		mapeamentoDireto(cacheL2, endereco, nsets_L2, bsize_L2, assoc_L2, &L2);
 	}
 	else if(tipoL2==2){
 		conjAssoc(cacheL2M, endereco, nsets_L2, bsize_L2, assoc_L2, &L2);
@@ -603,7 +603,7 @@ void decisaoCacheSeparada(){
 	if(endereco < XX ){//dados
 		//Vai para sua devida configuração
 		if(tipoL1d==1){
-			mapeamentoDireto(cacheL1d, endereco, nsets_L1d, bsize_L1d, &L1d);
+			mapeamentoDireto(cacheL1d, endereco, nsets_L1d, bsize_L1d, assoc_L1d, &L1d);
 		}
 		else if(tipoL1d==2){
 			conjAssoc(cacheL1Md, endereco, nsets_L1d, bsize_L1d, assoc_L1d, &L1d);
@@ -615,7 +615,7 @@ void decisaoCacheSeparada(){
 	else if(endereco >= XX ){ //Vai para cache de instruções se o endereço for igual a XX ou superior
 		//Vai para sua devida configuração
 		if(tipoL1i==1){
-			mapeamentoDireto(cacheL1i, endereco, nsets_L1i, bsize_L1i, &L1i);
+			mapeamentoDireto(cacheL1i, endereco, nsets_L1i, bsize_L1i, assoc_L1i, &L1i);
 		}
 		else if(tipoL1i==2){
 			conjAssoc(cacheL1Mi, endereco, nsets_L1i, bsize_L1i, assoc_L1i, &L1i);
