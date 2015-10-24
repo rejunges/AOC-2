@@ -172,8 +172,6 @@ void totalAssoc(cache *cacheL, int endereco, int nsets, int bsize, int assoc, Es
 			sizeTagIndice(endereco, nsets, bsize);
 			for(i=0; i<assoc; i++){ //confere primeiro se o que quer ser escrito já não existe na cache
 				if(cacheL[i].tag == tag && cacheL[i].bitVal == 1){
-					(*L).hit++;
-					(*L).leitura++;
 					flag = 1; //essa flag simboliza se houve um hit (1) ou um miss (continua em 0 e deverá ser feita escrita)
 					break;
 				}
@@ -291,8 +289,6 @@ void conjAssoc(cache **cacheL, int endereco, int nsets, int bsize, int assoc, Es
 			sizeTagIndice(endereco, nsets, bsize);
 			for(i=0; i<assoc; i++){ //confere primeiro se o que quer ser escrito já não existe na cache
 				if(cacheL[indice][i].tag == tag && cacheL[indice][i].bitVal == 1){
-					(*L).hit++;
-					(*L).leitura++;
 					flag = 1; //essa flag simboliza se houve um hit (1) ou um miss (continua em 0 e deverá ser feita escrita)
 					break;
 				}
