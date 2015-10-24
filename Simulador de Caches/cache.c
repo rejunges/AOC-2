@@ -898,7 +898,7 @@ void mapeamentoDireto(int endereco,int nsets, int bsize){
 					cacheL1_d[indice].tag = tag;           // seta novo tag
 					//Trata L2
 					sizeTagIndice(endereco,nsets_L2, bsize_L2, assoc_L2); //dados L2
-					if(cacheL2[indice].tag != tag){ //só vai escrever se o que houver na L2 não for o dado desejado
+					if(cacheL2[indice].bitVal==0){ //só vai escrever se o que houver na L2 não for o dado desejado
 						missL2++;
 						missCompL2++;
 						escritaL2++;
@@ -906,9 +906,18 @@ void mapeamentoDireto(int endereco,int nsets, int bsize){
 						cacheL2[indice].bitVal=1;
 						cacheL2[indice].tag= tag;
 					}
-					if(cacheL2[indice].tag == tag){ //se já houver em L2 o dado desejado, apenas da hit
-						leituraL2++;
-						hitL2++;
+					else {
+						if(cacheL2[indice].bitVal=1 && cacheL2[indice].tag == tag){ //se já houver em L2 o dado desejado, apenas da hit
+							leituraL2++;
+							hitL2++;
+						}
+						if(cacheL2[indice].bitVal=1 && cacheL2[indice].tag != tag){ //se já houver em L2 o dado desejado, apenas da hit
+							missL2++;
+							missConfL2++;
+							cacheL2[indice].tag = tag;
+							escritaL2++;
+							leituraL2++;
+						}
 					}
 				}
 				else {// dirtyBit ==1
