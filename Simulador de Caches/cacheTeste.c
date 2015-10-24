@@ -29,12 +29,12 @@ cache *cacheL1i, *cacheL1d, *cacheL2, **cacheL1Md, **cacheL1Mi, **cacheL2M;
 Estatistica L1i, L1d, L2;
 
 //Funções
-void totalAssoc(cache *cacheL, int endereco, int nsets, int bsize, Estatistica L);
-void conjAssoc(cache **cacheL, int endereco, int nsets, int bsize, Estatistica L);
-void mapeamentoDireto(cache* cacheL, int endereco, int nsets, int bsize, Estatistica L);
+void totalAssoc(cache *cacheL, int endereco, int nsets, int bsize, Estatistica* L);
+void conjAssoc(cache **cacheL, int endereco, int nsets, int bsize, Estatistica *L);
+void mapeamentoDireto(cache* cacheL, int endereco, int nsets, int bsize, Estatistica* L);
 void sizeTagIndice(int endereco,int nsets, int bsize);
-void zeraEstatistica(Estatistica L);
-void dadosRelatorio (Estatistica L);
+void zeraEstatistica(Estatistica *L);
+void dadosRelatorio (Estatistica *L);
 void nomeCache(int tipo);
 void relatorioDeEstatistica ();
 void criaCache();
@@ -107,53 +107,53 @@ int main(int argc,char *argv[]){ // argc é o numero de elementos e argv são os
 	relatorioDeEstatistica();
 	return 0;
 }
-void totalAssoc(cache *cacheL, int endereco, int nsets, int bsize, Estatistica L){
+void totalAssoc(cache *cacheL, int endereco, int nsets, int bsize, Estatistica* L){
 }
-void conjAssoc(cache **cacheL, int endereco, int nsets, int bsize, Estatistica L){
+void conjAssoc(cache **cacheL, int endereco, int nsets, int bsize, Estatistica* L){
 }
-void mapeamentoDireto(cache *cacheL, int endereco, int nsets, int bsize, Estatistica L){
+void mapeamentoDireto(cache *cacheL, int endereco, int nsets, int bsize, Estatistica* L){
 	
 	//L1 ou L2 se for leitura, e os tratamentos caso seja cache L1 são feitos dentro desse laço
 	if(le==0){
 		sizeTagIndice(endereco,nsets, bsize);
 		if(cacheL[indice].bitVal == 0){//Se o bit validade é 0  pq é o primeiro acesso a ela
-			L.miss++;                                   // Miss total de dados sobe
-			L.missComp++;                              // Esse é compulsorio
+			(*L).miss++;                                   // Miss total de dados sobe
+			(*L).missComp++;                              // Esse é compulsorio
 			cacheL[indice].bitVal = 1;       // validade = 1
-			L.escrita++; //escreverá em L1
-			L.leitura++; //Vai escrever mas também vai ler
+			(*L).escrita++; //escreverá em L1
+			(*L).leitura++; //Vai escrever mas também vai ler
 			cacheL[indice].tag = tag;
-			if(L.nivel==1){ 	// Se for L1(dado ou instrucao) e leitura
+			if((*L).nivel==1){ 	// Se for L1(dado ou instrucao) e leitura
 				//Trata a L2-> se um dado está na memória i ela precisa estar em i+1
 				decisaoCacheUnificada();
 			}
 		}
 		else {//bit validade 1, já usou essa memoria, vai ocorrer hit ou substituicao
 			if(cacheL[indice].tag == tag){
-				L.hit++; //encontrou, hit
-				L.leitura++;
+				(*L).hit++; //encontrou, hit
+				(*L).leitura++;
 			}
 			else {     //nao encontrou, precisa confererir o dirty
-				L.miss++;
-				L.missConf++;                // miss conflito
+				(*L).miss++;
+				(*L).missConf++;                // miss conflito
 				if(cacheL[indice].dirtyBit == 0){
-					L.escrita++;
-					L.leitura++;
+					(*L).escrita++;
+					(*L).leitura++;
 					cacheL[indice].tag = tag;           // seta novo tag
-					if(L.nivel==1){ 	// Se for L1(dado ou instrucao) e leitura
+					if((*L).nivel==1){ 	// Se for L1(dado ou instrucao) e leitura
 						//Trata a L2
 						decisaoCacheUnificada();
 					}
 				}
 				else {// dirtyBit == 1
-					if (L.nivel==1){
+					if ((*L).nivel==1){
 						int oldEndereco;
 						//soma em binário para conseguir o endereço antigo para atualizar L2, write-back
 						oldEndereco= ((cacheL[indice].tag << sizeIndice) << sizeOffset) | (sizeIndice << sizeOffset) | sizeOffset;
 						//Atualiza os dados de L1
 						cacheL[indice].tag=tag;
-						L.escrita++;
-						L.leitura++;
+						(*L).escrita++;
+						(*L).leitura++;
 						//Trata L2, porém com o endereco antigo
 						endereco=oldEndereco; //O endereco que vai ser atualizado em L2 é o endereco antigo
 						decisaoCacheUnificada();
@@ -161,21 +161,21 @@ void mapeamentoDireto(cache *cacheL, int endereco, int nsets, int bsize, Estatis
 					//Se L2 que tiver o dirty, nao precisa passar para a memoria principal, entao só atualiza nela
 					else{
 						cacheL[indice].tag=tag;
-						L.escrita++;
-						L.leitura++;
+						(*L).escrita++;
+						(*L).leitura++;
 					}
 				}
 			}
 		}
 	}
 	// L1(dado ou instrucao) escrita
-	else if(le==1 && L.nivel==1){ // metodo write-back
+	else if(le==1 && (*L).nivel==1){ // metodo write-back
 		//precisa fazer algo por causa do write-back
 		sizeTagIndice(endereco,nsets, bsize);
 		if(cacheL[indice].bitVal == 0){//Se o bit validade é 0  pq é o primeiro acesso a ela
 			//nao dá miss, porque seria um miss write e eles serão desconsiderados
 			cacheL[indice].bitVal = 1;       // validade = 1
-			L.escrita++; //escreverá em L1
+			(*L).escrita++; //escreverá em L1
 			cacheL[indice].tag = tag;
 			cacheL[indice].dirtyBit=1; //ocorreu uma escrita e nao ocorreu atualização em L2
 		}
@@ -186,7 +186,7 @@ void mapeamentoDireto(cache *cacheL, int endereco, int nsets, int bsize, Estatis
 			}
 			else {     //nao encontrou, precisa confererir o dirty
 				if(cacheL[indice].dirtyBit == 0){
-					L.escrita++;
+					(*L).escrita++;
 					cacheL[indice].tag = tag;     // seta novo tag
 					cacheL[indice].dirtyBit=1;	//não está atualizado em L2, quando se for fazer a leitura/escrita de algum valor diferente, irá atualizar em L2 (WRITE-BACK)
 				}
@@ -195,7 +195,7 @@ void mapeamentoDireto(cache *cacheL, int endereco, int nsets, int bsize, Estatis
 					//soma em binário para conseguir o endereço antigo para atualizar L2, write-back
 					oldEndereco= ((cacheL[indice].tag << sizeIndice) << sizeOffset) | (sizeIndice << sizeOffset) | sizeOffset;
 					cacheL[indice].tag=tag;
-					L.escrita++;
+					(*L).escrita++;
 					//Trata L2, porém com o endereco antigo
 					endereco=oldEndereco; //O endereco que vai ser atualizado em L2 é o endereco antigo
 					decisaoCacheUnificada();
@@ -204,11 +204,11 @@ void mapeamentoDireto(cache *cacheL, int endereco, int nsets, int bsize, Estatis
 		}
 	}
 	//escrita em L2
-	else if(le==1 && L.nivel==2){
+	else if(le==1 && (*L).nivel==2){
 		sizeTagIndice(endereco,nsets, bsize);
 		cacheL[indice].tag= tag; //Atualiza valor
 		cacheL[indice].bitVal=1;
-		L.escrita++;
+		(*L).escrita++;
 	}
 }
 void sizeTagIndice(int endereco,int nsets, int bsize){
@@ -218,27 +218,27 @@ void sizeTagIndice(int endereco,int nsets, int bsize){
 	indice = (endereco)%(nsets);				// considerando 2na n, n é o indice
 	tag = (endereco >> (sizeOffset >> sizeIndice));                 // o que restar do endereço sem offset e indice
 }
-void zeraEstatistica(Estatistica L){
+void zeraEstatistica(Estatistica* L){
 	//Acredito que esses valores já venham zerados, mas é sempre melhor garantir
-	L.hit=0;
-	L.miss=0;
-	L.missComp=0;
-	L.missConf=0;
-	L.missCap=0;
-	L.leitura=0;
-	L.escrita=0;
+	(*L).hit=0;
+	(*L).miss=0;
+	(*L).missComp=0;
+	(*L).missConf=0;
+	(*L).missCap=0;
+	(*L).leitura=0;
+	(*L).escrita=0;
 }
-void dadosRelatorio (Estatistica L){
+void dadosRelatorio (Estatistica* L){
 	float hr, mr; //hit ratio e miss ratio
-	hr= (float)(L.hit*100)/numAcess; // hit total * 100 / num acesso = hit ratio
-	mr= (float)(L.miss*100)/numAcess;
-	printf ("\t*Leitura: %d\n", L.leitura);
-	printf ("\t*Escrita: %d\n", L.escrita);
-	printf ("\t*Total de Hit: %d\n", L.hit);
-	printf ("\t*Total de Miss: %d\n", L.miss);
-	printf ("\t\t-Quantidade de Miss Compulsório: %d\n", L.missComp);
-	printf ("\t\t-Quantidade de Miss de Capacidade: %d\n",L.missCap);
-	printf ("\t\t-Quantidade de Miss de Conflito: %d\n", L.missConf);
+	hr= (float)((*L).hit*100)/numAcess; // hit total * 100 / num acesso = hit ratio
+	mr= (float)((*L).miss*100)/numAcess;
+	printf ("\t*Leitura: %d\n", (*L).leitura);
+	printf ("\t*Escrita: %d\n", (*L).escrita);
+	printf ("\t*Total de Hit: %d\n", (*L).hit);
+	printf ("\t*Total de Miss: %d\n", (*L).miss);
+	printf ("\t\t-Quantidade de Miss Compulsório: %d\n", (*L).missComp);
+	printf ("\t\t-Quantidade de Miss de Capacidade: %d\n",(*L).missCap);
+	printf ("\t\t-Quantidade de Miss de Conflito: %d\n", (*L).missConf);
 	printf ("\t*Hit Ratio: %.2f\n", hr);
 	printf ("\t*Miss Ratio: %.2f\n", mr);
 }
@@ -260,23 +260,23 @@ void relatorioDeEstatistica (){
 	printf("\n\n################### Cache L1 de dados ##################\n\n");
 	// Informa qual cache se refere
 	nomeCache(tipoL1d);
-	dadosRelatorio(L1d);
+	dadosRelatorio(&L1d);
 	printf("\n\n################ Cache L1 de instruções ################\n\n");
 	// Informa qual cache se refere
 	nomeCache(tipoL1i);
-	dadosRelatorio(L1i);
+	dadosRelatorio(&L1i);
 	printf("\n\n####################### Cache L2 #######################\n\n");
 	// Informa qual cache se refere
 	nomeCache(tipoL2);
-	dadosRelatorio(L2);
+	dadosRelatorio(&L2);
 	printf("\n\n########################################################\n\n");
 }
 void criaCache(){
-	zeraEstatistica(L1i);
+	zeraEstatistica(&L1i);
 	L1i.nivel=1;
-	zeraEstatistica(L1d);
+	zeraEstatistica(&L1d);
 	L1d.nivel=1;
-	zeraEstatistica(L2);
+	zeraEstatistica(&L2);
 	L2.nivel=2;
 	//cria L1 de dados
 	if (tipoL1d==1 || tipoL1d==3){
@@ -353,38 +353,38 @@ int defineTipos(int ass, int nsets){
 void decisaoCacheUnificada(){
 	//Referente a cache L2 ( unica unificada
 	if(tipoL2==1){
-		mapeamentoDireto(cacheL2, endereco, nsets_L2, bsize_L2, L2);
+		mapeamentoDireto(cacheL2, endereco, nsets_L2, bsize_L2, &L2);
 	}
 	else if(tipoL2==2){
-		conjAssoc(cacheL2M, endereco, nsets_L2, bsize_L2, L2);
+		conjAssoc(cacheL2M, endereco, nsets_L2, bsize_L2, &L2);
 	}
 	else if(tipoL2==3){
-		totalAssoc(cacheL2 ,endereco, nsets_L2, bsize_L2, L2);
+		totalAssoc(cacheL2 ,endereco, nsets_L2, bsize_L2, &L2);
 	}
 }
 void decisaoCacheSeparada(){
 	if(endereco < XX ){//dados
 		//Vai para sua devida configuração
 		if(tipoL1d==1){
-			mapeamentoDireto(cacheL1d, endereco, nsets_L1d, bsize_L1d, L1d);
+			mapeamentoDireto(cacheL1d, endereco, nsets_L1d, bsize_L1d, &L1d);
 		}
 		else if(tipoL1d==2){
-			conjAssoc(cacheL1Md, endereco, nsets_L1d, bsize_L1d,L1d);
+			conjAssoc(cacheL1Md, endereco, nsets_L1d, bsize_L1d, &L1d);
 		}
 		else if(tipoL1d==3){
-			totalAssoc(cacheL1d ,endereco, nsets_L1d, bsize_L1d, L1d);
+			totalAssoc(cacheL1d ,endereco, nsets_L1d, bsize_L1d, &L1d);
 		}
 	}
 	else if(endereco >= XX ){ //Vai para cache de instruções se o endereço for igual a XX ou superior
 		//Vai para sua devida configuração
 		if(tipoL1i==1){
-			mapeamentoDireto(cacheL1i, endereco, nsets_L1d, bsize_L1d, L1i);
+			mapeamentoDireto(cacheL1i, endereco, nsets_L1d, bsize_L1d, &L1i);
 		}
 		else if(tipoL1i==2){
-			conjAssoc(cacheL1Mi, endereco, nsets_L1d, bsize_L1d, L1i);
+			conjAssoc(cacheL1Mi, endereco, nsets_L1d, bsize_L1d, &L1i);
 		}
 		else if(tipoL1i==3){
-			totalAssoc(cacheL1i ,endereco, nsets_L1d, bsize_L1d, L1i);
+			totalAssoc(cacheL1i ,endereco, nsets_L1d, bsize_L1d, &L1i);
 		}
 	}
 }
