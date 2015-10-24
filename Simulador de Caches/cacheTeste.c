@@ -29,6 +29,8 @@ cache *cacheL1i, *cacheL1d, *cacheL2, **cacheL1Md, **cacheL1Mi, **cacheL2M;
 Estatistica L1i, L1d, L2;
 
 //Funções
+void totalAssoc(cache *cacheL, int endereco, int nsets, int bsize, Estatistica L);
+void conjAssoc(cache **cacheL, int endereco, int nsets, int bsize, Estatistica L);
 void mapeamentoDireto(cache* cacheL, int endereco, int nsets, int bsize, Estatistica L);
 void sizeTagIndice(int endereco,int nsets, int bsize);
 void zeraEstatistica(Estatistica L);
@@ -76,7 +78,7 @@ int main(int argc,char *argv[]){ // argc é o numero de elementos e argv são os
 		while (fscanf(arq, "%d", &endereco) != EOF){//vai ler linha por linha
 			fscanf(arq, "%d", &le);// A segunda linha informa se é leitura=0 ou escrita=1
 			numAcess++;
-			decisaoCache();
+			decisaoCacheSeparada();
 		}
 	}
 	else { //arquivo binário
@@ -105,7 +107,11 @@ int main(int argc,char *argv[]){ // argc é o numero de elementos e argv são os
 	relatorioDeEstatistica();
 	return 0;
 }
-void mapeamentoDireto(cache cacheL, int endereco, int nsets, int bsize, Estatistica L){
+void totalAssoc(cache *cacheL, int endereco, int nsets, int bsize, Estatistica L){
+}
+void conjAssoc(cache **cacheL, int endereco, int nsets, int bsize, Estatistica L){
+}
+void mapeamentoDireto(cache *cacheL, int endereco, int nsets, int bsize, Estatistica L){
 	
 	//L1 ou L2 se for leitura, e os tratamentos caso seja cache L1 são feitos dentro desse laço
 	if(le==0){
@@ -123,7 +129,7 @@ void mapeamentoDireto(cache cacheL, int endereco, int nsets, int bsize, Estatist
 			}
 		}
 		else {//bit validade 1, já usou essa memoria, vai ocorrer hit ou substituicao
-			if(cacheLd[indice].tag == tag){
+			if(cacheL[indice].tag == tag){
 				L.hit++; //encontrou, hit
 				L.leitura++;
 			}
@@ -143,11 +149,11 @@ void mapeamentoDireto(cache cacheL, int endereco, int nsets, int bsize, Estatist
 					if (L.nivel==1){
 						int oldEndereco;
 						//soma em binário para conseguir o endereço antigo para atualizar L2, write-back
-						oldEndereco= ((cacheL1_d[indice].tag << sizeIndice) << sizeOffset) | (sizeIndice << sizeOffset) | sizeOffset;
+						oldEndereco= ((cacheL[indice].tag << sizeIndice) << sizeOffset) | (sizeIndice << sizeOffset) | sizeOffset;
 						//Atualiza os dados de L1
 						cacheL[indice].tag=tag;
 						L.escrita++;
-						L.leituraL++;
+						L.leitura++;
 						//Trata L2, porém com o endereco antigo
 						endereco=oldEndereco; //O endereco que vai ser atualizado em L2 é o endereco antigo
 						decisaoCacheUnificada();
@@ -156,7 +162,7 @@ void mapeamentoDireto(cache cacheL, int endereco, int nsets, int bsize, Estatist
 					else{
 						cacheL[indice].tag=tag;
 						L.escrita++;
-						L.leituraL++;
+						L.leitura++;
 					}
 				}
 			}
@@ -187,7 +193,7 @@ void mapeamentoDireto(cache cacheL, int endereco, int nsets, int bsize, Estatist
 				else {// dirtyBit ==1, dai precisa atualizar L2
 					int oldEndereco;
 					//soma em binário para conseguir o endereço antigo para atualizar L2, write-back
-					oldEndereco= ((cacheL1_d[indice].tag << sizeIndice) << sizeOffset) | (sizeIndice << sizeOffset) | sizeOffset;
+					oldEndereco= ((cacheL[indice].tag << sizeIndice) << sizeOffset) | (sizeIndice << sizeOffset) | sizeOffset;
 					cacheL[indice].tag=tag;
 					L.escrita++;
 					//Trata L2, porém com o endereco antigo
@@ -199,7 +205,7 @@ void mapeamentoDireto(cache cacheL, int endereco, int nsets, int bsize, Estatist
 	}
 	//escrita em L2
 	else if(le==1 && L.nivel==2){
-		sizeTagIndice(endereco,nsets, bsize, assoc);
+		sizeTagIndice(endereco,nsets, bsize);
 		cacheL[indice].tag= tag; //Atualiza valor
 		cacheL[indice].bitVal=1;
 		L.escrita++;
@@ -350,7 +356,7 @@ void decisaoCacheUnificada(){
 		mapeamentoDireto(cacheL2, endereco, nsets_L2, bsize_L2, L2);
 	}
 	else if(tipoL2==2){
-		conjAssoc(cacheL2, endereco, nsets_L2, bsize_L2, L2);
+		conjAssoc(cacheL2M, endereco, nsets_L2, bsize_L2, L2);
 	}
 	else if(tipoL2==3){
 		totalAssoc(cacheL2 ,endereco, nsets_L2, bsize_L2, L2);
