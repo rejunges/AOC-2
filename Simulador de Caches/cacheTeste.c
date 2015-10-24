@@ -29,8 +29,8 @@ cache *cacheL1i, *cacheL1d, *cacheL2, **cacheL1Md, **cacheL1Mi, **cacheL2M;
 Estatistica L1i, L1d, L2;
 
 //Funções
-void totalAssoc(cache *cacheL, int endereco, int nsets, int bsize, Estatistica* L);
-void conjAssoc(cache **cacheL, int endereco, int nsets, int bsize, Estatistica *L);
+void totalAssoc(cache *cacheL, int endereco, int nsets, int bsize, int assoc, Estatistica* L);
+void conjAssoc(cache **cacheL, int endereco, int nsets, int bsize, int assoc, Estatistica *L);
 void mapeamentoDireto(cache* cacheL, int endereco, int nsets, int bsize, Estatistica* L);
 void sizeTagIndice(int endereco,int nsets, int bsize);
 void zeraEstatistica(Estatistica *L);
@@ -107,10 +107,247 @@ int main(int argc,char *argv[]){ // argc é o numero de elementos e argv são os
 	relatorioDeEstatistica();
 	return 0;
 }
-void totalAssoc(cache *cacheL, int endereco, int nsets, int bsize, Estatistica* L){
+void totalAssoc(cache *cacheL, int endereco, int nsets, int bsize, int assoc, Estatistica* L){
+	int i, flag = 0, flag2 = 0, aux;
+	
+	if(le == 0){ //leitura pra qualquer cache, tanto L1d ou L1i como L2
+		sizeTagIndice(endereco, nsets, bsize);
+		for(i=0; i<assoc; i++){
+			if(cacheL[i].tag == tag && cacheL[i].bitVal == 1){ //HIT
+				(*L).hit++;
+				(*L).leitura++;
+				flag = 1; //essa flag simboliza se houve um hit (1) ou um miss (continua em 0 e deverá ser feita escrita)
+				break;
+			}
+		}
+		if(flag == 0){ //MISS
+			for(i=0; i<assoc; i++){ //procura um espaço "livre" na cache para inserir o valor
+				if(cacheL[i].bitVal == 0){ //achou um espaço "livre" -> com bit de validade 0
+					(*L).miss++;
+					(*L).missComp++;
+					cacheL[i].bitVal = 1;
+					(*L).escrita++;
+					(*L).leitura++;
+					cacheL[i].tag = tag;
+					if((*L).nivel == 1){ //se a cache for nivel 1 (dados ou instruções), tem que tratar o dado no segundo nível também
+						decisaoCacheUnificada(); //trata o dado na L2
+					}
+					flag2 = 1;
+					break;
+				}
+			}
+			if(flag2 == 0){ //não achou um espaço livre, tem que fazer substituição randômica -> conferindo o dirtybit do lugar a ser substituído
+				(*L).miss++;
+				(*L).missConf++;
+				aux = rand()%assoc;
+				if(cacheL[aux].dirtyBit == 0){ //dirty bit em 0, não há necessidade de passar o valor pro nível inferior antes de substituí-lo
+					(*L).escrita++;
+					(*L).leitura++;
+					cacheL[aux].tag = tag;
+					if((*L).nivel == 1){
+						decisaoCacheUnificada();
+					}
+				}
+				else{ //dirty bit em 1, precisa passar o valor velho pra L2 antes de substituí-lo
+					if((*L).nivel == 1){ //dirty em 1 no primeiro nível, passa o endereço velho pro segundo nível
+						int oldEndereco;
+						oldEndereco= ((cacheL[aux].tag << sizeIndice) << sizeOffset) | (sizeIndice << sizeOffset) | sizeOffset;
+						cacheL[aux].tag = tag;
+						(*L).escrita++;
+						(*L).leitura++;
+						endereco = oldEndereco;
+						decisaoCacheUnificada(); //vai tratar na L2 com o endereço velho que estava no bloco antes de ser substituído
+					}
+					if((*L).nivel == 2){ //se for no segundo nível, só atualiza (não há a memória principal no simulador, então não há para onde levar o valor antigo)
+						cacheL[aux].tag = tag;
+						(*L).escrita++;
+						(*L).leitura++;
+					}
+				}
+			}
+		}
+	}
+	else{ //casos de escrita, difere para L1 e L2
+		if(le == 1 && (*L).nivel == 1){
+			sizeTagIndice(endereco, nsets, bsize);
+			for(i=0; i<assoc; i++){ //confere primeiro se o que quer ser escrito já não existe na cache
+				if(cacheL[i].tag == tag && cacheL[i].bitVal == 1){
+					(*L).hit++;
+					(*L).leitura++;
+					flag = 1; //essa flag simboliza se houve um hit (1) ou um miss (continua em 0 e deverá ser feita escrita)
+					break;
+				}
+			}
+			if(flag == 0){ //não está na cache, deve ser escrito
+				for(i=0; i<assoc; i++){ //procura um espaço "livre" na cache para inserir o valor
+					if(cacheL[i].bitVal == 0){ //achou um espaço "livre" -> com bit de validade 0
+						(*L).escrita++;
+						cacheL[i].bitVal = 1;
+						cacheL[i].tag = tag;
+						cacheL[i].dirtyBit = 1;
+						flag2 = 1;
+						break;
+					}
+				}
+				if(flag2 == 0){ //não achou espaço livre para escrever, vai ter que substituir algum bloco já existente
+					aux = rand()%assoc;
+					if(cacheL[aux].dirtyBit == 0){ //dirty bit em 0, não faz nada na L2
+						(*L).escrita++;
+						cacheL[aux].tag = tag;
+						cacheL[aux].dirtyBit = 1;
+					}
+					else{ //dirty bit em 1, atualiza na L2
+						int oldEndereco;
+						oldEndereco = ((cacheL[aux].tag << sizeIndice) << sizeOffset) | (sizeIndice << sizeOffset) | sizeOffset;
+						cacheL[aux].tag = tag;
+						(*L).escrita++;
+						endereco = oldEndereco; //O endereco que vai ser atualizado em L2 é o endereco antigo
+						decisaoCacheUnificada();
+					}
+				}
+			}
+		}
+		if(le == 1 && (*L).nivel == 2){ //escrita na L2, não há preocupação com o dirty bit nesse caso. Primeiro, procura espaço livre para escrever, se não houver, insere em bloco aleatório
+			sizeTagIndice(endereco, nsets, bsize);
+			for(i=0; i<assoc; i++){ //procura um espaço "livre" na cache para inserir o valor
+				if(cacheL[i].bitVal == 0){ //achou um espaço "livre" -> com bit de validade 0
+					cacheL[i].bitVal = 1;
+					(*L).escrita++;
+					cacheL[i].tag = tag;
+					flag2 = 1;
+					break;
+				}
+			}
+			if(flag2 == 0){
+				aux = rand()%assoc;
+				cacheL[aux].tag = tag;
+				(*L).escrita++;
+			}
+		}
+	}				
 }
-void conjAssoc(cache **cacheL, int endereco, int nsets, int bsize, Estatistica* L){
+
+void conjAssoc(cache **cacheL, int endereco, int nsets, int bsize, int assoc, Estatistica* L){
+	int i, flag = 0, flag2 = 0, aux;
+	
+	if(le == 0){ //leitura pra qualquer cache, tanto L1d ou L1i como L2
+		sizeTagIndice(endereco, nsets, bsize);
+		for(i=0; i<assoc; i++){
+			if(cacheL[indice][i].tag == tag && cacheL[indice][i].bitVal == 1){
+				(*L).hit++;
+				(*L).leitura++;
+				flag = 1; //essa flag simboliza se houve um hit (1) ou um miss (continua em 0 e deverá ser feita escrita)
+				break;
+			}
+		}
+		if(flag == 0){ //MISS
+			for(i=0; i<assoc; i++){ //procura um espaço "livre" na cache para inserir o valor
+				if(cacheL[indice][i].bitVal == 0){ //achou um espaço "livre" -> com bit de validade 0
+					(*L).miss++;
+					(*L).missComp++;
+					cacheL[indice][i].bitVal = 1;
+					(*L).escrita++;
+					(*L).leitura++;
+					cacheL[indice][i].tag = tag;
+					if((*L).nivel == 1){ //se a cache for nivel 1 (dados ou instruções), tem que tratar o dado no segundo nível também
+						decisaoCacheUnificada(); //trata o dado na L2
+					}
+					flag2 = 1;
+					break;
+				}
+			}
+			if(flag2 == 0){ //não achou um espaço livre, tem que fazer substituição randômica -> conferindo o dirtybit do lugar a ser substituído
+				(*L).miss++;
+				(*L).missConf++;
+				aux = rand()%assoc;
+				if(cacheL[indice][aux].dirtyBit == 0){ //dirty bit em 0, não há necessidade de passar o valor pro nível inferior antes de substituí-lo
+					(*L).escrita++;
+					(*L).leitura++;
+					cacheL[indice][aux].tag = tag;
+					if((*L).nivel == 1){
+						decisaoCacheUnificada();
+					}
+				}
+				else{ //dirty bit em 1, precisa passar o valor velho pra L2 antes de substituí-lo
+					if((*L).nivel == 1){ //dirty em 1 no primeiro nível, passa o endereço velho pro segundo nível
+						int oldEndereco;
+						oldEndereco= ((cacheL[indice][aux].tag << sizeIndice) << sizeOffset) | (sizeIndice << sizeOffset) | sizeOffset;
+						cacheL[indice][aux].tag = tag;
+						(*L).escrita++;
+						(*L).leitura++;
+						endereco = oldEndereco;
+						decisaoCacheUnificada(); //vai tratar na L2 com o endereço velho que estava no bloco antes de ser substituído
+					}
+					if((*L).nivel == 2){ //se for no segundo nível, só atualiza (não há a memória principal no simulador, então não há para onde levar o valor antigo)
+						cacheL[indice][aux].tag = tag;
+						(*L).escrita++;
+						(*L).leitura++;
+					}
+				}
+			}
+		}
+	}
+	else{ //casos de escrita, difere para L1 e L2
+		if(le == 1 && (*L).nivel == 1){
+			sizeTagIndice(endereco, nsets, bsize);
+			for(i=0; i<assoc; i++){ //confere primeiro se o que quer ser escrito já não existe na cache
+				if(cacheL[indice][i].tag == tag && cacheL[indice][i].bitVal == 1){
+					(*L).hit++;
+					(*L).leitura++;
+					flag = 1; //essa flag simboliza se houve um hit (1) ou um miss (continua em 0 e deverá ser feita escrita)
+					break;
+				}
+			}
+			if(flag == 0){ //não está na cache, deve ser escrito
+				for(i=0; i<assoc; i++){ //procura um espaço "livre" na cache para inserir o valor
+					if(cacheL[indice][i].bitVal == 0){ //achou um espaço "livre" -> com bit de validade 0
+						(*L).escrita++;
+						cacheL[indice][i].bitVal = 1;
+						cacheL[indice][i].tag = tag;
+						cacheL[indice][i].dirtyBit = 1;
+						flag2 = 1;
+						break;
+					}
+				}
+				if(flag2 == 0){ //não achou espaço livre para escrever, vai ter que substituir algum bloco já existente
+					aux = rand()%assoc;
+					if(cacheL[indice][aux].dirtyBit == 0){ //dirty bit em 0, não faz nada na L2
+						(*L).escrita++;
+						cacheL[indice][aux].tag = tag;
+						cacheL[indice][aux].dirtyBit = 1;
+					}
+					else{ //dirty bit em 1, atualiza na L2
+						int oldEndereco;
+						oldEndereco = ((cacheL[indice][aux].tag << sizeIndice) << sizeOffset) | (sizeIndice << sizeOffset) | sizeOffset;
+						cacheL[indice][aux].tag = tag;
+						(*L).escrita++;
+						endereco = oldEndereco; //O endereco que vai ser atualizado em L2 é o endereco antigo
+						decisaoCacheUnificada();
+					}
+				}
+			}
+		}
+		if(le == 1 && (*L).nivel == 2){ //escrita na L2, não há preocupação com o dirty bit nesse caso. Primeiro, procura espaço livre para escrever, se não houver, insere em bloco aleatório
+			sizeTagIndice(endereco, nsets, bsize);
+			for(i=0; i<assoc; i++){ //procura um espaço "livre" na cache para inserir o valor
+				if(cacheL[indice][i].bitVal == 0){ //achou um espaço "livre" -> com bit de validade 0
+					cacheL[indice][i].bitVal = 1;
+					(*L).escrita++;
+					cacheL[indice][i].tag = tag;
+					flag2 = 1;
+					break;
+				}
+			}
+			if(flag2 == 0){
+				aux = rand()%assoc;
+				cacheL[indice][aux].tag = tag;
+				(*L).escrita++;
+			}
+		}
+	}				
 }
+
+
 void mapeamentoDireto(cache *cacheL, int endereco, int nsets, int bsize, Estatistica* L){
 	
 	//L1 ou L2 se for leitura, e os tratamentos caso seja cache L1 são feitos dentro desse laço
@@ -356,10 +593,10 @@ void decisaoCacheUnificada(){
 		mapeamentoDireto(cacheL2, endereco, nsets_L2, bsize_L2, &L2);
 	}
 	else if(tipoL2==2){
-		conjAssoc(cacheL2M, endereco, nsets_L2, bsize_L2, &L2);
+		conjAssoc(cacheL2M, endereco, nsets_L2, bsize_L2, assoc_L2, &L2);
 	}
 	else if(tipoL2==3){
-		totalAssoc(cacheL2 ,endereco, nsets_L2, bsize_L2, &L2);
+		totalAssoc(cacheL2 ,endereco, nsets_L2, bsize_L2, assoc_L2, &L2);
 	}
 }
 void decisaoCacheSeparada(){
@@ -369,22 +606,22 @@ void decisaoCacheSeparada(){
 			mapeamentoDireto(cacheL1d, endereco, nsets_L1d, bsize_L1d, &L1d);
 		}
 		else if(tipoL1d==2){
-			conjAssoc(cacheL1Md, endereco, nsets_L1d, bsize_L1d, &L1d);
+			conjAssoc(cacheL1Md, endereco, nsets_L1d, bsize_L1d, assoc_L1d, &L1d);
 		}
 		else if(tipoL1d==3){
-			totalAssoc(cacheL1d ,endereco, nsets_L1d, bsize_L1d, &L1d);
+			totalAssoc(cacheL1d ,endereco, nsets_L1d, bsize_L1d, assoc_L1d, &L1d);
 		}
 	}
 	else if(endereco >= XX ){ //Vai para cache de instruções se o endereço for igual a XX ou superior
 		//Vai para sua devida configuração
 		if(tipoL1i==1){
-			mapeamentoDireto(cacheL1i, endereco, nsets_L1d, bsize_L1d, &L1i);
+			mapeamentoDireto(cacheL1i, endereco, nsets_L1i, bsize_L1i, &L1i);
 		}
 		else if(tipoL1i==2){
-			conjAssoc(cacheL1Mi, endereco, nsets_L1d, bsize_L1d, &L1i);
+			conjAssoc(cacheL1Mi, endereco, nsets_L1i, bsize_L1i, assoc_L1i, &L1i);
 		}
 		else if(tipoL1i==3){
-			totalAssoc(cacheL1i ,endereco, nsets_L1d, bsize_L1d, &L1i);
+			totalAssoc(cacheL1i ,endereco, nsets_L1i, bsize_L1i, assoc_L1i, &L1i);
 		}
 	}
 }
