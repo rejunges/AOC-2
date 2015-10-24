@@ -41,6 +41,7 @@ void nomeCache(int ass, int nset);
 void dadosRelatorio (int mt, int mcom,int mcap,int mconf, int ht, int escrita, int leitura);
 void decisaoCache();
 void sizeTagIndice(int endereco,int nsets, int bsize, int assoc);
+void trataL2MP();
 
 int main(int argc,char *argv[]){ // argc é o numero de elementos e argv são os elementos, começa no 1( pq o 0 é o ./cache )
 	char nomeArq[50], ext[4];
@@ -862,27 +863,8 @@ void mapeamentoDireto(int endereco,int nsets, int bsize){
 			cacheL1_d[indice].tag = tag;
 			//Trata a L2-> se um dado está na memória i ela precisa estar em i+1
 			sizeTagIndice(endereco,nsets_L2, bsize_L2, assoc_L2); //dados L2
-			if (cacheL2[indice].bitVal == 0 ){//vai ter que buscar da memória
-				missL2++;
-				missCompL2++; //Compulsório
-				cacheL2[indice].bitVal=1;
-				escritaL2++;
-				leituraL2++;
-				cacheL2[indice].tag=tag;
-			}
-			else{ 
-				if (cacheL2[indice].bitVal==1 && cacheL2[indice].tag == tag){
-					hitL2++;
-					leituraL2++;
-				}
-				if (cacheL2[indice].bitVal==1 && cacheL2[indice].tag != tag){ //dado não está em L2, pega da memória principal e traz pra L2
-					missL2++;
-					missConfL2++;
-					cacheL2[indice].tag = tag;
-					escritaL2++;
-					leituraL2++;
-				}
-			}
+			//Se a L2 for Mapeamento direto vai para cá
+			trataL2MP();
 		}
 		else {//bit validade 1, já usou essa memoria, vai ocorrer hit ou substituicao
 			if(cacheL1_d[indice].tag == tag){
@@ -898,27 +880,7 @@ void mapeamentoDireto(int endereco,int nsets, int bsize){
 					cacheL1_d[indice].tag = tag;           // seta novo tag
 					//Trata L2
 					sizeTagIndice(endereco,nsets_L2, bsize_L2, assoc_L2); //dados L2
-					if(cacheL2[indice].bitVal==0){ //só vai escrever se o que houver na L2 não for o dado desejado
-						missL2++;
-						missCompL2++;
-						escritaL2++;
-						leituraL2++;
-						cacheL2[indice].bitVal=1;
-						cacheL2[indice].tag= tag;
-					}
-					else {
-						if(cacheL2[indice].bitVal=1 && cacheL2[indice].tag == tag){ //se já houver em L2 o dado desejado, apenas da hit
-							leituraL2++;
-							hitL2++;
-						}
-						if(cacheL2[indice].bitVal=1 && cacheL2[indice].tag != tag){ //se já houver em L2 o dado desejado, apenas da hit
-							missL2++;
-							missConfL2++;
-							cacheL2[indice].tag = tag;
-							escritaL2++;
-							leituraL2++;
-						}
-					}
+					trataL2MP();
 				}
 				else {// dirtyBit ==1
 					int oldEndereco;
@@ -947,27 +909,8 @@ void mapeamentoDireto(int endereco,int nsets, int bsize){
 			cacheL1_i[indice].tag = tag;
 			//Trata a L2-> se um dado está na memória i ela precisa estar em i+1
 			sizeTagIndice(endereco,nsets_L2, bsize_L2, assoc_L2); //dados L2
-			if (cacheL2[indice].bitVal == 0 ){//vai ter que buscar da memória
-				missL2++;
-				missCompL2++; //Compulsório
-				cacheL2[indice].bitVal=1;
-				escritaL2++;
-				leituraL2++;
-				cacheL2[indice].tag=tag;
-			}
-			else{ 
-				if (cacheL2[indice].bitVal==1 && cacheL2[indice].tag == tag){
-					hitL2++;
-					leituraL2++;
-				}
-				 if (cacheL2[indice].bitVal==1 && cacheL2[indice].tag != tag){
-					missL2++;
-					missConfL2++;
-					cacheL2[indice].tag = tag;
-					escritaL2++;
-					leituraL2++;
-				}
-			}
+			//Se for mapeamento direto na L2 entra aqui
+			trataL2MP();
 		}
 		else {//bit validade 1, já usou essa memoria, vai ocorrer hit ou substituicao
 			if(cacheL1_i[indice].tag == tag){
@@ -983,6 +926,7 @@ void mapeamentoDireto(int endereco,int nsets, int bsize){
 					cacheL1_i[indice].tag = tag;           // seta novo tag
 					//Trata L2
 					sizeTagIndice(endereco,nsets_L2, bsize_L2, assoc_L2); //dados L2
+					//Se a L2 for mapeamento direto entra aqui
 					if(cacheL2[indice].tag != tag){
 						missL2++;
 						missCompL2++;
@@ -1080,6 +1024,29 @@ void mapeamentoDireto(int endereco,int nsets, int bsize){
 					escritaL1i++;
 				}
 			}
+		}
+	}
+}
+void trataL2MP(){
+	if(cacheL2[indice].bitVal==0){ //só vai escrever se o que houver na L2 não for o dado desejado
+		missL2++;
+		missCompL2++;
+		escritaL2++;
+		leituraL2++;
+		cacheL2[indice].bitVal=1;
+		cacheL2[indice].tag= tag;
+	}
+	else {
+		if(cacheL2[indice].bitVal=1 && cacheL2[indice].tag == tag){ //se já houver em L2 o dado desejado, apenas da hit
+			leituraL2++;
+			hitL2++;
+		}
+		if(cacheL2[indice].bitVal=1 && cacheL2[indice].tag != tag){ //se já houver em L2 o dado desejado, apenas da hit
+			missL2++;
+			missConfL2++;
+			cacheL2[indice].tag = tag;
+			escritaL2++;
+			leituraL2++;
 		}
 	}
 }
